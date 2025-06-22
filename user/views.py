@@ -108,7 +108,15 @@ class EmployeeCreateView(View):
                 except Exception as e:
                     messages.error(request, f"Error creating employee: {str(e)}")
             else:
-                messages.error(request, "Please correct the errors below.")
+                # Display specific form errors
+                if not user_form.is_valid():
+                    for field, errors in user_form.errors.items():
+                        for error in errors:
+                            messages.error(request, f"{field.replace('_', ' ').title()}: {error}")
+                if not profile_form.is_valid():
+                    for field, errors in profile_form.errors.items():
+                        for error in errors:
+                            messages.error(request, f"{field.replace('_', ' ').title()}: {error}")
 
         elif section == 'document':
             user_id = request.session.get('new_user_id')
@@ -283,7 +291,15 @@ class EmployeeEditView(UpdateView):
                 except Exception as e:
                     messages.error(request, f"Error updating profile: {str(e)}")
             else:
-                messages.error(request, "Please correct the errors below.")
+                # Display specific form errors
+                if not user_form.is_valid():
+                    for field, errors in user_form.errors.items():
+                        for error in errors:
+                            messages.error(request, f"{field.replace('_', ' ').title()}: {error}")
+                if not profile_form.is_valid():
+                    for field, errors in profile_form.errors.items():
+                        for error in errors:
+                            messages.error(request, f"{field.replace('_', ' ').title()}: {error}")
 
         elif section == 'work':
             user_form = UserForm(instance=user)
