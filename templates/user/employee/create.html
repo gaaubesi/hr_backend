@@ -183,7 +183,7 @@
                                             <div class="col-md-3 pe-2">
                                                 <label for="id_document_type-0">Document Type <span class="asteriskField">*</span></label>
                                                 <select name="document_type-0" id="id_document_type-0" class="form-select document-type-select">
-                                                    <option value="">Select Document Type</option>
+                                                    {% comment %} <option value="">Select Document Type</option> {% endcomment %}
                                                     {% for value, label in document_form.fields.document_type.choices %}
                                                         <option value="{{ value }}" {% if value in uploaded_document_types %}disabled{% endif %}>{{ label }}</option>
                                                     {% endfor %}
@@ -461,6 +461,31 @@
                         dropdownParent: editModal
                     });
                 }
+                
+                // Add toggle functionality for edit modal
+                const editDocumentTypeSelect = editModal.find('select[name="document_type"]');
+                const editIssueDateField = editModal.find('input[name="issue_date"]');
+                const editIssueBodyField = editModal.find('select[name="issue_body"]');
+                const editIssueDateLabel = editModal.find('label[for^="edit_issue_date_"]');
+                const editIssueBodyLabel = editModal.find('label[for^="edit_issue_body_"]');
+                
+                function toggleEditIssueFields() {
+                    if (editDocumentTypeSelect.val() === 'resume') {
+                        // Hide issue date and issuing authority fields for Resume
+                        editIssueDateField.closest('.mb-3').hide();
+                        editIssueBodyField.closest('.mb-3').hide();
+                    } else {
+                        // Show issue date and issuing authority fields for other document types
+                        editIssueDateField.closest('.mb-3').show();
+                        editIssueBodyField.closest('.mb-3').show();
+                    }
+                }
+                
+                // Add event listener to document type select in edit modal
+                editDocumentTypeSelect.off('change.toggleIssue').on('change.toggleIssue', toggleEditIssueFields);
+                
+                // Initialize on modal show
+                toggleEditIssueFields();
             });
         });
 
@@ -494,8 +519,56 @@
             }
         }
 
+        // Function to toggle issue date and issuing authority fields based on document type
+        function toggleIssueFields(documentTypeSelect) {
+            const formItem = documentTypeSelect.closest('.document-form-item');
+            const issueDateField = formItem.querySelector('input[name^="issue_date-"]');
+            const issueBodyField = formItem.querySelector('select[name^="issue_body-"]');
+            const issueDateLabel = formItem.querySelector('label[for^="id_issue_date-"]');
+            const issueBodyLabel = formItem.querySelector('label[for^="id_issue_body-"]');
+            
+            if (documentTypeSelect.value === 'resume') {
+                // Hide issue date and issuing authority fields for Resume
+                if (issueDateField) {
+                    issueDateField.closest('.col-md-3').style.display = 'none';
+                }
+                if (issueBodyField) {
+                    issueBodyField.closest('.col-md-3').style.display = 'none';
+                }
+                if (issueDateLabel) {
+                    issueDateLabel.closest('.col-md-3').style.display = 'none';
+                }
+                if (issueBodyLabel) {
+                    issueBodyLabel.closest('.col-md-3').style.display = 'none';
+                }
+            } else {
+                // Show issue date and issuing authority fields for other document types
+                if (issueDateField) {
+                    issueDateField.closest('.col-md-3').style.display = 'block';
+                }
+                if (issueBodyField) {
+                    issueBodyField.closest('.col-md-3').style.display = 'block';
+                }
+                if (issueDateLabel) {
+                    issueDateLabel.closest('.col-md-3').style.display = 'block';
+                }
+                if (issueBodyLabel) {
+                    issueBodyLabel.closest('.col-md-3').style.display = 'block';
+                }
+            }
+        }
+
         // Update all existing document type selects
         document.querySelectorAll('.document-type-select').forEach(updateDocumentTypeOptions);
+
+        // Add event listeners to existing document type selects
+        document.querySelectorAll('.document-type-select').forEach(function(select) {
+            select.addEventListener('change', function() {
+                toggleIssueFields(this);
+            });
+            // Initialize on page load
+            toggleIssueFields(select);
+        });
 
         // Document form handling
         const addMoreBtn = document.getElementById('add-more-document');
@@ -567,6 +640,16 @@
                         allowClear: true,
                         width: '100%'
                     });
+                }
+                
+                // Add event listener to the new document type select
+                const newDocumentTypeSelect = newForm.querySelector('select[name^="document_type-"]');
+                if (newDocumentTypeSelect) {
+                    newDocumentTypeSelect.addEventListener('change', function() {
+                        toggleIssueFields(this);
+                    });
+                    // Initialize on creation
+                    toggleIssueFields(newDocumentTypeSelect);
                 }
             });
         }

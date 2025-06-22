@@ -145,7 +145,7 @@ class EmployeeCreateView(View):
                 try:
                     # Convert Nepali date to English date
                     issue_date = None
-                    if form_data['issue_date']:
+                    if form_data['issue_date'] and form_data['document_type'] != 'resume':
                         try:
                             issue_date = nepali_str_to_english(form_data['issue_date'])
                         except Exception as e:
@@ -154,7 +154,7 @@ class EmployeeCreateView(View):
 
                     # Convert issue_body ID to District instance
                     issue_body = None
-                    if form_data['issue_body']:
+                    if form_data['issue_body'] and form_data['document_type'] != 'resume':
                         try:
                             issue_body = District.objects.get(id=form_data['issue_body'])
                         except District.DoesNotExist:
@@ -338,7 +338,7 @@ class EmployeeEditView(UpdateView):
                 try:
                     # Convert Nepali date to English date
                     issue_date = None
-                    if form_data['issue_date']:
+                    if form_data['issue_date'] and form_data['document_type'] != 'resume':
                         try:
                             issue_date = nepali_str_to_english(form_data['issue_date'])
                         except Exception as e:
@@ -347,7 +347,7 @@ class EmployeeEditView(UpdateView):
 
                     # Convert issue_body ID to District instance
                     issue_body = None
-                    if form_data['issue_body']:
+                    if form_data['issue_body'] and form_data['document_type'] != 'resume':
                         try:
                             issue_body = District.objects.get(id=form_data['issue_body'])
                         except District.DoesNotExist:
@@ -478,9 +478,13 @@ class EditDocumentView(View):
             # Update document fields
             if document_type:
                 document.document_type = document_type
+                # Clear issue date and issuing authority for Resume documents
+                if document_type == 'resume':
+                    document.issue_date = None
+                    document.issue_body = None
             if document_file:
                 document.document_file = document_file
-            if issue_date:
+            if issue_date and document_type != 'resume':
                 try:
                     # Convert Nepali date to English date
                     english_date = nepali_str_to_english(issue_date)
@@ -488,7 +492,7 @@ class EditDocumentView(View):
                 except Exception as e:
                     messages.error(request, f"Invalid date format: {str(e)}")
                     return redirect(f"{reverse('user:employee_edit', kwargs={'pk': user.id})}?tab=document")
-            if issue_body is not None:
+            if issue_body is not None and document_type != 'resume':
                 # Convert issue_body ID to District instance
                 if issue_body:
                     try:
