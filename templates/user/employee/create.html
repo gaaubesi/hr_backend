@@ -182,7 +182,7 @@
                                         <div class="row g-3">
                                             <div class="col-md-3 pe-2">
                                                 <label for="id_document_type-0">Document Type <span class="asteriskField">*</span></label>
-                                                <select name="document_type-0" id="id_document_type-0" class="form-select document-type-select">
+                                                <select name="document_type-0" id="id_document_type-0" class="form-select document-type-select" required>
                                                     {% comment %} <option value="">Select Document Type</option> {% endcomment %}
                                                     {% for value, label in document_form.fields.document_type.choices %}
                                                         <option value="{{ value }}" {% if value in uploaded_document_types %}disabled{% endif %}>{{ label }}</option>
@@ -191,7 +191,7 @@
                                             </div>
                                             <div class="col-md-3 px-2">
                                                 <label for="id_document_file-0">Document File <span class="asteriskField">*</span></label>
-                                                <input type="file" name="document_file-0" id="id_document_file-0" class="form-control">
+                                                <input type="file" name="document_file-0" id="id_document_file-0" class="form-control" required>
                                             </div>
                                             <div class="col-md-3 px-2">
                                                 <label for="id_issue_date-0">Issue Date</label>
@@ -252,12 +252,18 @@
                                         </div>
                                         <div class="small text-muted mb-2">
                                             {% if document.issue_date %}
-                                            <div>Issue Date: {{ document.issue_date|to_nepali_date }}</div>
+                                                <div>Issue Date: {{ document.issue_date|to_nepali_date }}</div>
+                                            {% else %}
+                                                <div style="visibility: hidden;">Issue Date placeholder</div>
                                             {% endif %}
+                                            
                                             {% if document.issue_body %}
-                                            <div>Issuing Authority: {{ document.issue_body }}</div>
+                                                <div>Issuing Authority: {{ document.issue_body }}</div>
+                                            {% else %}
+                                                <div style="visibility: hidden;">Issuing Authority placeholder</div>
                                             {% endif %}
                                         </div>
+
                                         <div class="d-flex gap-2 mt-3">
                                             <button type="button" class="btn btn-outline-primary btn-sm flex-grow-1" data-bs-toggle="modal" data-bs-target="#viewDocumentModal{{ document.id }}">
                                                 <i class="fas fa-eye me-1"></i> View
@@ -327,7 +333,7 @@
                                             <input type="hidden" name="form_section" value="document">
                                             <div class="modal-body">
                                                 <div class="mb-3">
-                                                    <label for="edit_document_type_{{ document.id }}" class="form-label">Document Type</label>
+                                                    <label for="edit_document_type_{{ document.id }}" class="form-label">Document Type <span class="asteriskField">*</span></label>
                                                     <select name="document_type" id="edit_document_type_{{ document.id }}" class="form-select" required>
                                                         {% for value, label in document_form.fields.document_type.choices %}
                                                             <option value="{{ value }}" {% if value == document.document_type %}selected{% endif %}>{{ label }}</option>
