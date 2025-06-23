@@ -468,30 +468,32 @@
                     });
                 }
                 
-                // Add toggle functionality for edit modal
+               // Add toggle functionality for edit modal
                 const editDocumentTypeSelect = editModal.find('select[name="document_type"]');
                 const editIssueDateField = editModal.find('input[name="issue_date"]');
                 const editIssueBodyField = editModal.find('select[name="issue_body"]');
                 const editIssueDateLabel = editModal.find('label[for^="edit_issue_date_"]');
                 const editIssueBodyLabel = editModal.find('label[for^="edit_issue_body_"]');
-                
+
                 function toggleEditIssueFields() {
                     // Hide issue date and issuing authority fields by default
                     editIssueDateField.closest('.mb-3').hide();
                     editIssueBodyField.closest('.mb-3').hide();
-                    
-                    // Only show issue date and issuing authority fields for Citizenship Front and Citizenship Back
-                    if (editDocumentTypeSelect.val() === 'citizenship_front' || editDocumentTypeSelect.val() === 'citizenship_back') {
+
+                    // Show for specific document types
+                    const docType = editDocumentTypeSelect.val();
+                    if (docType === 'citizenship_front' || docType === 'citizenship_back' || docType === 'pan_card') {
                         editIssueDateField.closest('.mb-3').show();
                         editIssueBodyField.closest('.mb-3').show();
                     }
                 }
-                
+
                 // Add event listener to document type select in edit modal
                 editDocumentTypeSelect.off('change.toggleIssue').on('change.toggleIssue', toggleEditIssueFields);
-                
+
                 // Initialize on modal show
                 toggleEditIssueFields();
+
             });
         });
 
@@ -547,8 +549,8 @@
                 issueBodyLabel.closest('.col-md-3').style.display = 'none';
             }
             
-            // Only show issue date and issuing authority fields for Citizenship Front and Citizenship Back
-            if (documentTypeSelect.value === 'citizenship_front' || documentTypeSelect.value === 'citizenship_back') {
+            // Only show issue date and issuing authority fields for Citizenship Front,  Citizenship Back and Pan Card
+            if (documentTypeSelect.value === 'citizenship_front' || documentTypeSelect.value === 'citizenship_back' || documentTypeSelect.value === 'pan_card') {
                 if (issueDateField) {
                     issueDateField.closest('.col-md-3').style.display = 'block';
                 }
