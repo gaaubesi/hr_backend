@@ -108,6 +108,12 @@ class DocumentForm(forms.ModelForm):
     class Meta:
         model = Document
         fields = ['document_type', 'document_file', 'issue_body', 'issue_date']
+        widgets = {
+            'issue_body': forms.Select(attrs={
+                'class': 'form-control select2',
+                'data-placeholder': 'Select Issuing Authority'
+            }),
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -115,6 +121,9 @@ class DocumentForm(forms.ModelForm):
             choice for choice in self.fields['document_type'].choices if choice[0] != 'all'
         ]
         self.fields['document_file'].required = True
+        self.fields['issue_body'].empty_label = "Select Issuing Authority"
+        # Order districts by name for better UX
+        self.fields['issue_body'].queryset = self.fields['issue_body'].queryset.order_by('name')
 
 class PayoutForm(forms.ModelForm):
     class Meta:

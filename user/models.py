@@ -102,7 +102,7 @@ class Document(models.Model):
     user = models.ForeignKey(AuthUser, related_name='documents', on_delete=models.CASCADE)
     document_type = models.CharField(max_length=50, choices=DOCUMENT_TYPES)
     document_file = models.FileField(null=True, upload_to='documents/', blank=True)
-    issue_body = models.CharField(max_length=100, blank=True, null=True, verbose_name='Issued By')
+    issue_body = models.ForeignKey('branch.District', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Issuing Authority')
     issue_date = models.DateField(null=True, verbose_name="Issue Date")
     uploaded_at = models.DateTimeField(auto_now_add=True)
     

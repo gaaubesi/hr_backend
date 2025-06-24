@@ -46,7 +46,7 @@
     <div class="card-body mt-3">
         <form method="get" class="row g-3">
             <div class="col-md-3">
-                <label class="form-label">Month <span class="text-danger">*</span></label>
+                <label class="form-label">Month <span class="asteriskField">*</span></label>
                 <select name="month" class="form-select" required>
                     <option value="">Select Month</option>
                     {% for value, label in nepali_months %}
@@ -70,7 +70,7 @@
             </div>
 
             <div class="col-md-3">
-                <label class="form-label">Team Member <span class="text-danger">*</span></label>
+                <label class="form-label">Team Member <span class="asteriskField">*</span></label>
                 <select name="employee" id="employeeDropdown" class="form-select" required>
                     {% for employee in all_users %}
                         <option value="{{ employee.id }}" {% if employee.id|stringformat:"s" == selected_employee %}selected{% endif %}>

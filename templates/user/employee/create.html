@@ -8,6 +8,8 @@
 {% endblock title %}
 
 {% block styles %}
+    <link rel="stylesheet" href="{% static 'css/select2.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/select2-bootstrap-5-theme.min.css' %}">
     <style>
         /* Highlight the active tab button with primary background and white text */
         .nav-tabs .nav-link.active {
@@ -64,6 +66,19 @@
             opacity: 0;
             cursor: pointer;
         }
+
+        /* Fix select2 z-index in modals */
+        .modal .select2-container {
+            z-index: 9999 !important;
+        }
+        
+        .modal .select2-dropdown {
+            z-index: 9999 !important;
+        }
+        
+        .modal .select2-results {
+            z-index: 9999 !important;
+        }
     </style>
 {% endblock styles %}
 
@@ -88,8 +103,8 @@
                         </div>
                     </div>
                     <h5 class="mb-2">{{ user_form.first_name.value }} {{ user_form.last_name.value }}</h5>
-                    <p class="text-muted mb-1">{{ user_form.email.value }}</p>
-                    <p class="text-muted">{{ profile_form.mobile_number.value }}</p>
+                    <p class="text-muted mb-1"><i class="fa-solid fa-envelope me-2"></i>{{ user_form.email.value }}</p>
+                    <p class="text-muted"><i class="fa-solid fa-phone me-2"></i>{{ profile_form.mobile_number.value }}</p>
                 </div>
             </div>
         </div>
@@ -103,22 +118,22 @@
             <!-- Tabs -->
             <ul class="nav nav-tabs mb-3" id="employeeTabs" role="tablist">
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile" type="button">Profile</button>
+                    <button class="nav-link {% if not active_tab or active_tab == 'profile' %}active{% endif %}" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile" type="button">Profile</button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="work-tab" data-bs-toggle="tab" data-bs-target="#work" type="button">Work</button>
+                    <button class="nav-link {% if active_tab == 'work' %}active{% endif %}" id="work-tab" data-bs-toggle="tab" data-bs-target="#work" type="button">Work</button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="document-tab" data-bs-toggle="tab" data-bs-target="#document" type="button">Document</button>
+                    <button class="nav-link {% if active_tab == 'document' %}active{% endif %}" id="document-tab" data-bs-toggle="tab" data-bs-target="#document" type="button">Document</button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="payout-tab" data-bs-toggle="tab" data-bs-target="#payout" type="button">Payout</button>
+                    <button class="nav-link {% if active_tab == 'payout' %}active{% endif %}" id="payout-tab" data-bs-toggle="tab" data-bs-target="#payout" type="button">Payout</button>
                 </li>
             </ul>
 
             <div class="tab-content" id="employeeTabsContent">
                 <!-- Profile Tab -->
-                <div class="tab-pane fade show active" id="profile" role="tabpanel">
+                <div class="tab-pane fade {% if not active_tab or active_tab == 'profile' %}show active{% endif %}" id="profile" role="tabpanel">
                     <form method="POST" enctype="multipart/form-data" id="profile-form">
 
                         {% csrf_token %}
@@ -139,7 +154,7 @@
                 </div>
 
                 <!-- Work Tab -->
-                <div class="tab-pane fade" id="work" role="tabpanel">
+                <div class="tab-pane fade {% if active_tab == 'work' %}show active{% endif %}" id="work" role="tabpanel">
                     <form method="POST">
                         {% csrf_token %}
                         <input type="hidden" name="form_section" value="work">
@@ -156,7 +171,7 @@
                 </div>
 
                 <!-- Document Tab -->
-                <div class="tab-pane fade" id="document" role="tabpanel">
+                <div class="tab-pane fade {% if active_tab == 'document' %}show active{% endif %}" id="document" role="tabpanel">
                     <form method="POST" enctype="multipart/form-data" id="document-form">
                         {% csrf_token %}
                         <input type="hidden" name="form_section" value="document">
@@ -166,24 +181,30 @@
                                     <div class="document-form-item mb-3">
                                         <div class="row g-3">
                                             <div class="col-md-3 pe-2">
-                                                <label for="id_document_type-0">Document Type</label>
-                                                <select name="document_type-0" id="id_document_type-0" class="form-select document-type-select">
+                                                <label for="id_document_type-0">Document Type <span class="asteriskField">*</span></label>
+                                                <select name="document_type-0" id="id_document_type-0" class="form-select document-type-select" required>
+                                                    {% comment %} <option value="">Select Document Type</option> {% endcomment %}
                                                     {% for value, label in document_form.fields.document_type.choices %}
                                                         <option value="{{ value }}" {% if value in uploaded_document_types %}disabled{% endif %}>{{ label }}</option>
                                                     {% endfor %}
                                                 </select>
                                             </div>
                                             <div class="col-md-3 px-2">
-                                                <label for="id_document_file-0">Document File</label>
-                                                <input type="file" name="document_file-0" id="id_document_file-0" class="form-control">
+                                                <label for="id_document_file-0">Document File <span class="asteriskField">*</span></label>
+                                                <input type="file" name="document_file-0" id="id_document_file-0" class="form-control" required>
                                             </div>
                                             <div class="col-md-3 px-2">
                                                 <label for="id_issue_date-0">Issue Date</label>
                                                 <input type="text" name="issue_date-0" id="id_issue_date-0" class="form-control" placeholder="YYYY-MM-DD (BS)">
                                             </div>
                                             <div class="col-md-3 ps-2">
-                                                <label for="id_issue_body-0">Issue Body</label>
-                                                <input type="text" name="issue_body-0" id="id_issue_body-0" class="form-control">
+                                                <label for="id_issue_body-0">Issuing Authority</label>
+                                                <select class="select2 form-control" name="issue_body-0" id="id_issue_body-0" >
+                                                    <option value="">Select Issuing Authority</option>
+                                                    {% for district in document_form.fields.issue_body.queryset %}
+                                                        <option value="{{ district.id }}">{{ district.name }}</option>
+                                                    {% endfor %}
+                                                </select>
                                             </div>
                                         </div>
                                     </div>
@@ -201,6 +222,15 @@
                         </div>
                     </form>
 
+                    <!-- Districts data for JavaScript -->
+                    <script type="application/json" id="districts-data">
+                        [
+                            {% for district in document_form.fields.issue_body.queryset %}
+                                {"id": "{{ district.id }}", "name": "{{ district.name }}"}{% if not forloop.last %},{% endif %}
+                            {% endfor %}
+                        ]
+                    </script>
+
                     <!-- Display existing documents -->
                     <div class="mt-4">
                         <div class="d-flex justify-content-between align-items-center mb-3">
@@ -208,7 +238,7 @@
                         </div>
                         <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
                             {% for document in documents %}
-                            <div class="col">
+                            <div class="col" data-document-type="{{ document.document_type }}">
                                 <div class="card h-100 shadow-sm">
                                     <div class="card-body">
                                         <div class="d-flex justify-content-between align-items-start mb-2">
@@ -222,12 +252,18 @@
                                         </div>
                                         <div class="small text-muted mb-2">
                                             {% if document.issue_date %}
-                                            <div>Issue Date: {{ document.issue_date|to_nepali_date }}</div>
+                                                <div>Issue Date: {{ document.issue_date|to_nepali_date }}</div>
+                                            {% else %}
+                                                <div style="visibility: hidden;">Issue Date placeholder</div>
                                             {% endif %}
+                                            
                                             {% if document.issue_body %}
-                                            <div>Issued Body: {{ document.issue_body }}</div>
+                                                <div>Issuing Authority: {{ document.issue_body }}</div>
+                                            {% else %}
+                                                <div style="visibility: hidden;">Issuing Authority placeholder</div>
                                             {% endif %}
                                         </div>
+
                                         <div class="d-flex gap-2 mt-3">
                                             <button type="button" class="btn btn-outline-primary btn-sm flex-grow-1" data-bs-toggle="modal" data-bs-target="#viewDocumentModal{{ document.id }}">
                                                 <i class="fas fa-eye me-1"></i> View
@@ -238,7 +274,7 @@
                                                 data-document-id="{{ document.id }}"
                                                 data-document-type="{{ document.document_type }}"
                                                 data-issue-date="{{ document.issue_date|date:'Y-m-d' }}"
-                                                data-issue-body="{{ document.issue_body }}">
+                                                data-issue-body="{% if document.issue_body %}{{ document.issue_body.id }}{% endif %}">
                                                 <i class="fas fa-edit"></i>
                                             </button>
                                             <button type="button" class="btn btn-outline-danger btn-sm delete-btn"
@@ -297,7 +333,7 @@
                                             <input type="hidden" name="form_section" value="document">
                                             <div class="modal-body">
                                                 <div class="mb-3">
-                                                    <label for="edit_document_type_{{ document.id }}" class="form-label">Document Type</label>
+                                                    <label for="edit_document_type_{{ document.id }}" class="form-label">Document Type <span class="asteriskField">*</span></label>
                                                     <select name="document_type" id="edit_document_type_{{ document.id }}" class="form-select" required>
                                                         {% for value, label in document_form.fields.document_type.choices %}
                                                             <option value="{{ value }}" {% if value == document.document_type %}selected{% endif %}>{{ label }}</option>
@@ -311,16 +347,21 @@
                                                 </div>
                                                 <div class="mb-3">
                                                     <label for="edit_issue_date_{{ document.id }}" class="form-label">Issue Date</label>
-                                                    <input type="text" name="issue_date" id="edit_issue_date_{{ document.id }}" class="form-control" placeholder="YYYY-MM-DD (BS)" value="{% if document.issue_date %}{{ document.issue_date|date:'Y-m-d' }}{% endif %}">
+                                                    <input type="text" name="issue_date" id="edit_issue_date_{{ document.id }}" class="form-control" placeholder="YYYY-MM-DD (BS)" value="{% if document.issue_date %}{{ document.issue_date|to_nepali_date }}{% endif %}">
                                                 </div>
                                                 <div class="mb-3">
-                                                    <label for="edit_issue_body_{{ document.id }}" class="form-label">Issue Body</label>
-                                                    <input type="text" name="issue_body" id="edit_issue_body_{{ document.id }}" class="form-control" value="{{ document.issue_body }}">
+                                                    <label for="edit_issue_body_{{ document.id }}" class="form-label">Issuing Authority</label>
+                                                    <select name="issue_body" id="edit_issue_body_{{ document.id }}" class="form-control select2">
+                                                        <option value="">Select Issuing Authority</option>
+                                                        {% for district in document_form.fields.issue_body.queryset %}
+                                                            <option value="{{ district.id }}" {% if district.id == document.issue_body.id %}selected{% endif %}>{{ district.name }}</option>
+                                                        {% endfor %}
+                                                    </select>
                                                 </div>
                                             </div>
                                             <div class="modal-footer">
-                                                <button type="submit" class="btn btn-primary">Update Document</button>
-                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                <button type="submit" class="btn btn-success">{{ action }}</button>
+                                                <button type="button" class="btn btn-warning" data-bs-dismiss="modal">Cancel</button>
                                             </div>
                                         </form>
                                     </div>
@@ -338,7 +379,7 @@
                 </div>
 
                  <!-- Payout Tab -->
-                 <div class="tab-pane fade" id="payout" role="tabpanel">
+                 <div class="tab-pane fade {% if active_tab == 'payout' %}show active{% endif %}" id="payout" role="tabpanel">
                     <form method="POST">
                         {% csrf_token %}
                         <input type="hidden" name="form_section" value="payout">
@@ -381,6 +422,7 @@
 {% block scripts %}
 {{ block.super }}
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 <script>
     // Handle tab selection from URL parameter
     document.addEventListener('DOMContentLoaded', function() {
@@ -394,6 +436,67 @@
             }
         }
 
+        // Initialize select2 for all issue_body dropdowns
+        function initializeSelect2() {
+            $('select[name^="issue_body"]').select2({
+                allowClear: true,
+                width: '100%'
+            });
+        }
+
+        // Initialize select2 on page load
+        initializeSelect2();
+
+        // Initialize select2 for edit modal dropdowns when modal is shown
+        $('.edit-document-btn').on('click', function() {
+            const documentId = $(this).data('document-id');
+            const editModal = $(`#editDocumentModal${documentId}`);
+            
+            editModal.on('shown.bs.modal', function() {
+                const editIssueBodySelect = editModal.find('select[name="issue_body"]');
+                if (editIssueBodySelect.length) {
+                    // Destroy existing select2 if it exists
+                    if (editIssueBodySelect.hasClass('select2-hidden-accessible')) {
+                        editIssueBodySelect.select2('destroy');
+                    }
+                    
+                    // Reinitialize select2
+                    editIssueBodySelect.select2({
+                        allowClear: true,
+                        width: '100%',
+                        dropdownParent: editModal
+                    });
+                }
+                
+               // Add toggle functionality for edit modal
+                const editDocumentTypeSelect = editModal.find('select[name="document_type"]');
+                const editIssueDateField = editModal.find('input[name="issue_date"]');
+                const editIssueBodyField = editModal.find('select[name="issue_body"]');
+                const editIssueDateLabel = editModal.find('label[for^="edit_issue_date_"]');
+                const editIssueBodyLabel = editModal.find('label[for^="edit_issue_body_"]');
+
+                function toggleEditIssueFields() {
+                    // Hide issue date and issuing authority fields by default
+                    editIssueDateField.closest('.mb-3').hide();
+                    editIssueBodyField.closest('.mb-3').hide();
+
+                    // Show for specific document types
+                    const docType = editDocumentTypeSelect.val();
+                    if (docType === 'citizenship_front' || docType === 'citizenship_back' || docType === 'pan_card') {
+                        editIssueDateField.closest('.mb-3').show();
+                        editIssueBodyField.closest('.mb-3').show();
+                    }
+                }
+
+                // Add event listener to document type select in edit modal
+                editDocumentTypeSelect.off('change.toggleIssue').on('change.toggleIssue', toggleEditIssueFields);
+
+                // Initialize on modal show
+                toggleEditIssueFields();
+
+            });
+        });
+
         // Handle delete confirmation modal
         $(".delete-btn").on('click', function () {
             var url = $(this).data('url');
@@ -404,11 +507,11 @@
             modal.find('.confirmButton').attr('href', url);
         });
 
-        // Track uploaded document types
+        // Track uploaded document types from data attribute
         const uploadedTypes = new Set();
-        {% for document in documents %}
-            uploadedTypes.add('{{ document.document_type }}');
-        {% endfor %}
+        document.querySelectorAll('[data-document-type]').forEach(function(element) {
+            uploadedTypes.add(element.getAttribute('data-document-type'));
+        });
 
         // Function to update document type options
         function updateDocumentTypeOptions(select) {
@@ -424,8 +527,56 @@
             }
         }
 
+        // Function to toggle issue date and issuing authority fields based on document type
+        function toggleIssueFields(documentTypeSelect) {
+            const formItem = documentTypeSelect.closest('.document-form-item');
+            const issueDateField = formItem.querySelector('input[name^="issue_date-"]');
+            const issueBodyField = formItem.querySelector('select[name^="issue_body-"]');
+            const issueDateLabel = formItem.querySelector('label[for^="id_issue_date-"]');
+            const issueBodyLabel = formItem.querySelector('label[for^="id_issue_body-"]');
+            
+            // Hide issue date and issuing authority fields by default
+            if (issueDateField) {
+                issueDateField.closest('.col-md-3').style.display = 'none';
+            }
+            if (issueBodyField) {
+                issueBodyField.closest('.col-md-3').style.display = 'none';
+            }
+            if (issueDateLabel) {
+                issueDateLabel.closest('.col-md-3').style.display = 'none';
+            }
+            if (issueBodyLabel) {
+                issueBodyLabel.closest('.col-md-3').style.display = 'none';
+            }
+            
+            // Only show issue date and issuing authority fields for Citizenship Front,  Citizenship Back and Pan Card
+            if (documentTypeSelect.value === 'citizenship_front' || documentTypeSelect.value === 'citizenship_back' || documentTypeSelect.value === 'pan_card') {
+                if (issueDateField) {
+                    issueDateField.closest('.col-md-3').style.display = 'block';
+                }
+                if (issueBodyField) {
+                    issueBodyField.closest('.col-md-3').style.display = 'block';
+                }
+                if (issueDateLabel) {
+                    issueDateLabel.closest('.col-md-3').style.display = 'block';
+                }
+                if (issueBodyLabel) {
+                    issueBodyLabel.closest('.col-md-3').style.display = 'block';
+                }
+            }
+        }
+
         // Update all existing document type selects
         document.querySelectorAll('.document-type-select').forEach(updateDocumentTypeOptions);
+
+        // Add event listeners to existing document type selects
+        document.querySelectorAll('.document-type-select').forEach(function(select) {
+            select.addEventListener('change', function() {
+                toggleIssueFields(this);
+            });
+            // Initialize on page load
+            toggleIssueFields(select);
+        });
 
         // Document form handling
         const addMoreBtn = document.getElementById('add-more-document');
@@ -436,31 +587,44 @@
             addMoreBtn.addEventListener('click', function() {
                 formCount++;
                 const newForm = document.querySelector('.document-form-item').cloneNode(true);
-                
+
                 // Update IDs and names to be unique
                 const inputs = newForm.querySelectorAll('input, select, label');
                 inputs.forEach(input => {
-                    if (input.id) {
-                        input.id = input.id.replace('-0', `-${formCount}`);
-                    }
-                    if (input.name) {
-                        input.name = input.name.replace('-0', `-${formCount}`);
-                    }
-                    if (input.htmlFor) {
-                        input.htmlFor = input.htmlFor.replace('-0', `-${formCount}`);
-                    }
+                    if (input.id) input.id = input.id.replace('-0', `-${formCount}`);
+                    if (input.name) input.name = input.name.replace('-0', `-${formCount}`);
+                    if (input.htmlFor) input.htmlFor = input.htmlFor.replace('-0', `-${formCount}`);
                 });
 
                 // Clear values
-                inputs.forEach(input => {
-                    if (input.type === 'file') {
-                        input.value = '';
-                    } else if (input.type === 'select-one') {
-                        input.selectedIndex = 0;
-                        // Update options for the new select
-                        updateDocumentTypeOptions(input);
-                    }
+                // Clear all text inputs (including issue date)
+                newForm.querySelectorAll('input[type="text"]').forEach(input => input.value = '');
+                // Clear all file inputs
+                newForm.querySelectorAll('input[type="file"]').forEach(input => input.value = '');
+                // Reset selects
+                newForm.querySelectorAll('select').forEach(select => {
+                    select.selectedIndex = 0;
+                    updateDocumentTypeOptions(select);
                 });
+
+                // Remove any select2 containers that may have been cloned
+                newForm.querySelectorAll('.select2-container').forEach(el => el.remove());
+
+                // Re-populate the issue_body select with districts, and destroy any select2 instance
+                const issueBodySelect = newForm.querySelector('select[name^="issue_body-"]');
+                if (issueBodySelect) {
+                    if ($(issueBodySelect).hasClass('select2-hidden-accessible')) {
+                        $(issueBodySelect).select2('destroy');
+                    }
+                    issueBodySelect.innerHTML = '<option value="">Select Issuing Authority</option>';
+                    const districtsData = JSON.parse(document.getElementById('districts-data').textContent);
+                    districtsData.forEach(district => {
+                        const option = document.createElement('option');
+                        option.value = district.id;
+                        option.textContent = district.name;
+                        issueBodySelect.appendChild(option);
+                    });
+                }
 
                 // Add remove button if not the first form
                 if (formCount > 1) {
@@ -476,6 +640,58 @@
                 }
 
                 documentForms.appendChild(newForm);
+
+                // Initialize select2 for the newly created issue_body dropdown
+                const newIssueBodySelect = newForm.querySelector('select[name^="issue_body-"]');
+                if (newIssueBodySelect) {
+                    $(newIssueBodySelect).select2({
+                        allowClear: true,
+                        width: '100%'
+                    });
+                }
+
+                // Add event listener to the new document type select
+                const newDocumentTypeSelect = newForm.querySelector('select[name^="document_type-"]');
+                if (newDocumentTypeSelect) {
+                    newDocumentTypeSelect.addEventListener('change', function() {
+                        toggleIssueFields(this);
+                    });
+                    // Initialize on creation
+                    toggleIssueFields(newDocumentTypeSelect);
+                }
+            });
+        }
+
+
+        // Preview profile picture before upload
+        const profilePictureInput = document.getElementById('id_profile_profile_picture');
+        const profilePreview = document.getElementById('profile-preview');
+
+        if (profilePictureInput) {
+            profilePictureInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        // Remove the icon if it exists
+                        const icon = profilePreview.closest('.profile-picture-container').querySelector('.fa-user');
+                        if (icon) {
+                            icon.remove();
+                        }
+                        
+                        // Create or update the image
+                        if (profilePreview.tagName === 'IMG') {
+                            profilePreview.src = e.target.result;
+                        } else {
+                            const img = document.createElement('img');
+                            img.src = e.target.result;
+                            img.alt = 'Profile Picture';
+                            img.id = 'profile-preview';
+                            profilePreview.parentNode.replaceChild(img, profilePreview);
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                }
             });
         }
     });
@@ -505,37 +721,5 @@
             clonedInput.files = fileInput.files;
         });
     }
-
-    // Preview profile picture before upload
-    document.addEventListener('DOMContentLoaded', function() {
-        const profilePictureInput = document.getElementById('id_profile_profile_picture');
-        const profilePreview = document.getElementById('profile-preview');
-
-        profilePictureInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    // Remove the icon if it exists
-                    const icon = profilePreview.closest('.profile-picture-container').querySelector('.fa-user');
-                    if (icon) {
-                        icon.remove();
-                    }
-                    
-                    // Create or update the image
-                    if (profilePreview.tagName === 'IMG') {
-                        profilePreview.src = e.target.result;
-                    } else {
-                        const img = document.createElement('img');
-                        img.src = e.target.result;
-                        img.alt = 'Profile Picture';
-                        img.id = 'profile-preview';
-                        profilePreview.parentNode.replaceChild(img, profilePreview);
-                    }
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-    });
 </script>
 {% endblock %}
