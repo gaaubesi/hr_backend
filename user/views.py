@@ -11,22 +11,24 @@ from django.conf import settings
 from leave.models import EmployeeLeave, LeaveType
 from utils.common import point_down_round
 from utils.date_converter import nepali_str_to_english
-from .models import AuthUser, Profile, WorkingDetail, GENDER, MARITAL_STATUS, JobType, Document, Payout
-from .forms import ProfileForm, UserForm, WorkingDetailForm, DocumentForm, PayoutForm
+from .models import AuthUser, Profile, WorkingDetail, GENDER, MARITAL_STATUS, JobType, Document, Payout, BankDetail
+from .forms import ProfileForm, UserForm, WorkingDetailForm, DocumentForm, PayoutForm, BankDetailForm
 from branch.models import District
 
 
 def get_common_context(user_form=None, profile_form=None, working_form=None,
-                       document_form=None, payout_form=None, documents=None,
-                       payouts=None, profile=None, action='Create', active_tab=None):
+                       document_form=None, payout_form=None, bank_detail_form=None, documents=None,
+                       payouts=None, bank_details=None, profile=None, action='Create', active_tab=None):
     return {
         'user_form': user_form or UserForm(prefix='user'),
         'profile_form': profile_form or ProfileForm(prefix='profile'),
         'working_form': working_form or WorkingDetailForm(prefix='work'),
         'document_form': document_form or DocumentForm(),
         'payout_form': payout_form or PayoutForm(),
+        'bank_detail_form': bank_detail_form or BankDetailForm(),
         'documents': documents or [],
         'payouts': payouts or [],
+        'bank_details': bank_details or [],
         'profile': profile,
         'action': action,
         'active_tab': active_tab,
@@ -173,6 +175,34 @@ class EmployeeCreateView(View):
 
         return redirect(f"{reverse('user:employee_create')}?tab=payout")
 
+    def handle_bank_detail_section(self, request):
+        user_id = request.session.get('new_user_id')
+        if not user_id:
+            messages.error(request, "Please complete profile information first.")
+            return redirect('user:employee_create')
+
+        user = get_object_or_404(AuthUser, id=user_id)
+        bank_detail_form = BankDetailForm(request.POST)
+
+        if bank_detail_form.is_valid():
+            try:
+                bank_detail = bank_detail_form.save(commit=False)
+                bank_detail.account_holder = user
+                
+                # If this is marked as primary, unmark other bank details as primary
+                if bank_detail.is_primary:
+                    BankDetail.objects.filter(account_holder=user, is_primary=True).update(is_primary=False)
+                
+                bank_detail.save()
+                messages.success(request, "Bank details saved successfully.")
+            except Exception as e:
+                messages.error(request, f"Error saving bank details: {str(e)}")
+        else:
+            context = get_common_context(bank_detail_form=bank_detail_form, active_tab='bank_detail')
+            return render(request, self.template_name, context)
+
+        return redirect(f"{reverse('user:employee_create')}?tab=bank_detail")
+
 
 class EmployeeEditView(UpdateView):
     template_name = 'user/employee/create.html'
@@ -192,6 +222,10 @@ class EmployeeEditView(UpdateView):
         payout = Payout.objects.filter(user=user).first()
         payout_form = PayoutForm(instance=payout) if payout else PayoutForm()
         
+        # Get bank details
+        bank_details = BankDetail.objects.filter(account_holder=user)
+        bank_detail_form = BankDetailForm()
+        
         documents = Document.objects.filter(user=user)
         payouts = Payout.objects.filter(user=user)
         
@@ -204,8 +238,10 @@ class EmployeeEditView(UpdateView):
             'working_form': working_form,
             'document_form': document_form,
             'payout_form': payout_form,
+            'bank_detail_form': bank_detail_form,
             'documents': documents,
             'payouts': payouts,
+            'bank_details': bank_details,
             'profile': profile,
             'action': 'Update',
             'uploaded_document_types': uploaded_document_types,
@@ -425,6 +461,74 @@ class EmployeeEditView(UpdateView):
             
             return redirect(f"{reverse('user:employee_edit', kwargs={'pk': user.id})}?tab=payout")
 
+        elif section == 'bank_detail':
+            user_form = UserForm(instance=user)
+            profile_form = ProfileForm(instance=profile)
+            working_form = WorkingDetailForm(instance=working_detail)
+            document_form = DocumentForm()
+            payout = Payout.objects.filter(user=user).first()
+            payout_form = PayoutForm(instance=payout) if payout else PayoutForm()
+            
+            # Get existing bank details
+            documents = Document.objects.filter(user=user)
+            payouts = Payout.objects.filter(user=user)
+            bank_details = BankDetail.objects.filter(account_holder=user)
+            uploaded_document_types = documents.values_list('document_type', flat=True)
+            
+            bank_detail_form = BankDetailForm(request.POST)
+            
+            if bank_detail_form.is_valid():
+                try:
+                    bank_detail = bank_detail_form.save(commit=False)
+                    bank_detail.account_holder = user
+                    
+                    # If this is marked as primary, unmark other bank details as primary
+                    if bank_detail.is_primary:
+                        BankDetail.objects.filter(account_holder=user, is_primary=True).update(is_primary=False)
+                    
+                    bank_detail.save()
+                    messages.success(request, "Bank details saved successfully.")
+                except Exception as e:
+                    messages.error(request, f"Error saving bank details: {str(e)}")
+            else:
+                # Re-render forms with errors
+                context = {
+                    'user_form': user_form,
+                    'profile_form': profile_form,
+                    'working_form': working_form,
+                    'document_form': document_form,
+                    'payout_form': payout_form,
+                    'bank_detail_form': bank_detail_form,
+                    'documents': documents,
+                    'payouts': payouts,
+                    'bank_details': bank_details,
+                    'profile': profile,
+                    'action': 'Update',
+                    'uploaded_document_types': uploaded_document_types,
+                    'profile_picture': profile.profile_picture if profile.profile_picture else None,
+                    'active_tab': 'bank_detail'
+                }
+                return render(request, self.template_name, context)
+            
+            # After successful save, redirect with context that includes existing bank details
+            context = {
+                'user_form': user_form,
+                'profile_form': profile_form,
+                'working_form': working_form,
+                'document_form': document_form,
+                'payout_form': payout_form,
+                'bank_detail_form': BankDetailForm(),  # Empty form for new entry
+                'documents': documents,
+                'payouts': payouts,
+                'bank_details': bank_details,
+                'profile': profile,
+                'action': 'Update',
+                'uploaded_document_types': uploaded_document_types,
+                'profile_picture': profile.profile_picture if profile.profile_picture else None,
+                'active_tab': 'bank_detail'
+            }
+            return render(request, self.template_name, context)
+
         return redirect('user:employee_edit', pk=user.id)
 
 
@@ -455,6 +559,9 @@ class EmployeeDeleteView(View):
         # Delete all associated payouts
         Payout.objects.filter(user=user).delete()
 
+        # Delete all associated bank details
+        BankDetail.objects.filter(account_holder=user).delete()
+
         user.delete()
 
         messages.success(request, "Team member and related data deleted successfully.")
@@ -472,6 +579,7 @@ class EmployeeDetailView(View):
         working_detail = getattr(employee, 'working_detail', None)
         documents = Document.objects.filter(user=employee)
         payouts = Payout.objects.filter(user=employee)
+        bank_details = BankDetail.objects.filter(account_holder=employee)
         
         context = {
             'employee': employee,
@@ -479,6 +587,7 @@ class EmployeeDetailView(View):
             'working_detail': working_detail,
             'documents': documents,
             'payouts': payouts,
+            'bank_details': bank_details,
         }
         return render(request, self.template_name, context)
 
@@ -545,6 +654,53 @@ class DeletePayoutView(View):
         payout.delete()
         messages.success(request, "Payout deleted successfully.")
         return redirect(f"{reverse('user:employee_edit', kwargs={'pk': user.id})}?tab=payout")
+
+class DeleteBankDetailView(View):
+    def get(self, request, pk):
+        bank_detail = get_object_or_404(BankDetail, pk=pk)
+        user = bank_detail.account_holder
+        bank_detail.delete()
+        messages.success(request, "Bank detail deleted successfully.")
+        return redirect(f"{reverse('user:employee_edit', kwargs={'pk': user.id})}?tab=bank_detail")
+
+class EditBankDetailView(View):
+    def post(self, request, pk):
+        bank_detail = get_object_or_404(BankDetail, pk=pk)
+        user = bank_detail.account_holder
+        
+        # Get form data
+        bank_name = request.POST.get('bank_name')
+        bank_username = request.POST.get('bank_username')
+        branch = request.POST.get('branch')
+        account_number = request.POST.get('account_number')
+        is_primary = request.POST.get('is_primary') == 'on'
+        
+        try:
+            # Update bank detail fields
+            if bank_name:
+                bank_detail.bank_name = bank_name
+            if bank_username is not None:
+                bank_detail.bank_username = bank_username
+            if branch:
+                bank_detail.branch = branch
+            if account_number:
+                bank_detail.account_number = account_number
+            
+            # Handle primary status
+            if is_primary:
+                # Unmark other bank details as primary
+                BankDetail.objects.filter(account_holder=user, is_primary=True).exclude(pk=pk).update(is_primary=False)
+                bank_detail.is_primary = True
+            else:
+                bank_detail.is_primary = False
+            
+            bank_detail.save()
+            messages.success(request, "Bank detail updated successfully.")
+            
+        except Exception as e:
+            messages.error(request, f"Error updating bank detail: {str(e)}")
+        
+        return redirect(f"{reverse('user:employee_edit', kwargs={'pk': user.id})}?tab=bank_detail")
 
 #assign leave to employee
 def assignLeaveToEmployee(employee):

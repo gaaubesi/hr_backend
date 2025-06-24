@@ -129,6 +129,9 @@
                 <li class="nav-item" role="presentation">
                     <button class="nav-link {% if active_tab == 'payout' %}active{% endif %}" id="payout-tab" data-bs-toggle="tab" data-bs-target="#payout" type="button">Payout</button>
                 </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link {% if active_tab == 'bank_detail' %}active{% endif %}" id="bank-detail-tab" data-bs-toggle="tab" data-bs-target="#bank-detail" type="button">Bank Details</button>
+                </li>
             </ul>
 
             <div class="tab-content" id="employeeTabsContent">
@@ -393,6 +396,23 @@
                             <a href="{% url 'user:employee_list' %}" class="btn btn-warning">Cancel</a>
                         </div>
                     </form>
+                </div>
+
+                <!-- Bank Details Tab -->
+                <div class="tab-pane fade {% if active_tab == 'bank_detail' %}show active{% endif %}" id="bank-detail" role="tabpanel">
+                    <form method="POST" id="bank-detail-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="form_section" value="bank_detail">
+                        <div class="row">
+                            <div class="col-md-6">
+                                {{ bank_detail_form|crispy }}
+                            </div>
+                        </div>
+                        <div class="text-center mt-3">
+                            <button type="submit" class="btn btn-success">{{ action }}</button>
+                            <a href="{% url 'user:employee_list' %}" class="btn btn-warning">Cancel</a>
+                        </div>
+                    </form>               
                 </div>
             </div>
         </div>
@@ -694,6 +714,47 @@
                 }
             });
         }
+
+        // Sync file selection from original input to hidden one
+        fileInput.addEventListener('change', function () {
+            clonedInput.files = fileInput.files;
+        });
+
+        // Bank detail form handling
+        const bankDetailForm = document.getElementById('bank-detail-form');
+        if (bankDetailForm) {
+            bankDetailForm.addEventListener('submit', function(e) {
+                const isPrimary = document.querySelector('input[name="is_primary"]');
+                if (isPrimary && isPrimary.checked) {
+                    // Show confirmation dialog for primary account
+                    if (!confirm('Setting this as primary will unmark other bank details as primary. Continue?')) {
+                        e.preventDefault();
+                        return false;
+                    }
+                }
+            });
+        }
+
+        // Handle bank detail edit modal data population
+        document.querySelectorAll('.edit-bank-detail-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                const bankDetailId = this.getAttribute('data-bank-detail-id');
+                const bankName = this.getAttribute('data-bank-name');
+                const bankUsername = this.getAttribute('data-bank-username');
+                const branch = this.getAttribute('data-branch');
+                const accountNumber = this.getAttribute('data-account-number');
+                const isPrimary = this.getAttribute('data-is-primary') === 'true';
+                
+                const modal = document.getElementById(`editBankDetailModal${bankDetailId}`);
+                if (modal) {
+                    modal.querySelector('input[name="bank_name"]').value = bankName;
+                    modal.querySelector('input[name="bank_username"]').value = bankUsername;
+                    modal.querySelector('input[name="branch"]').value = branch;
+                    modal.querySelector('input[name="account_number"]').value = accountNumber;
+                    modal.querySelector('input[name="is_primary"]').checked = isPrimary;
+                }
+            });
+        });
     });
 
     window.onload = function () {

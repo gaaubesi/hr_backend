@@ -1,7 +1,7 @@
 from django import forms
 
 from utils.date_converter import english_to_nepali, nepali_str_to_english
-from .models import Profile, WorkingDetail, Document, Payout
+from .models import Profile, WorkingDetail, Document, Payout, BankDetail
 from .models import AuthUser
 from django.core.exceptions import ValidationError
 
@@ -138,4 +138,22 @@ class PayoutForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['payout_interval'].empty_label = "Select Payout Interval"
         self.fields['amount'].required = True
+
+class BankDetailForm(forms.ModelForm):
+    class Meta:
+        model = BankDetail
+        fields = ['bank_name', 'bank_username', 'branch', 'account_number', 'is_primary']
+        widgets = {
+            'bank_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter bank name'}),
+            'bank_username': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter bank username'}),
+            'account_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter account number'}),
+            'branch': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter branch name'}),
+            'is_primary': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['bank_name'].required = True
+        self.fields['branch'].required = True
+        self.fields['account_number'].required = True
         
