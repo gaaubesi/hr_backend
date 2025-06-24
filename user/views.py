@@ -86,7 +86,7 @@ class EmployeeCreateView(View):
 
         if section == 'profile':
             user_form = UserForm(request.POST, prefix='user')
-            profile_form = ProfileForm(request.POST, prefix='profile')
+            profile_form = ProfileForm(request.POST, request.FILES, prefix='profile')
 
             if user_form.is_valid() and profile_form.is_valid():
                 try:
@@ -108,15 +108,19 @@ class EmployeeCreateView(View):
                 except Exception as e:
                     messages.error(request, f"Error creating employee: {str(e)}")
             else:
-                # Display specific form errors
-                if not user_form.is_valid():
-                    for field, errors in user_form.errors.items():
-                        for error in errors:
-                            messages.error(request, f"{field.replace('_', ' ').title()}: {error}")
-                if not profile_form.is_valid():
-                    for field, errors in profile_form.errors.items():
-                        for error in errors:
-                            messages.error(request, f"{field.replace('_', ' ').title()}: {error}")
+                # Re-render forms with errors
+                context = {
+                    'user_form': user_form,
+                    'profile_form': profile_form,
+                    'working_form': WorkingDetailForm(prefix='work'),
+                    'document_form': DocumentForm(),
+                    'payout_form': PayoutForm(),
+                    'documents': [],
+                    'payouts': [],
+                    'action': 'Create',
+                    'active_tab': 'profile'
+                }
+                return render(request, self.template_name, context)
 
         elif section == 'document':
             user_id = request.session.get('new_user_id')
@@ -212,7 +216,19 @@ class EmployeeCreateView(View):
                 except Exception as e:
                     messages.error(request, f"Error saving payout: {str(e)}")
             else:
-                messages.error(request, "Please correct the payout form errors.")
+                # Re-render forms with errors
+                context = {
+                    'user_form': UserForm(prefix='user'),
+                    'profile_form': ProfileForm(prefix='profile'),
+                    'working_form': WorkingDetailForm(prefix='work'),
+                    'document_form': DocumentForm(),
+                    'payout_form': payout_form,
+                    'documents': [],
+                    'payouts': [],
+                    'action': 'Create',
+                    'active_tab': 'payout'
+                }
+                return render(request, self.template_name, context)
             
             return redirect(f"{reverse('user:employee_create')}?tab=payout")
 
@@ -291,15 +307,29 @@ class EmployeeEditView(UpdateView):
                 except Exception as e:
                     messages.error(request, f"Error updating profile: {str(e)}")
             else:
-                # Display specific form errors
-                if not user_form.is_valid():
-                    for field, errors in user_form.errors.items():
-                        for error in errors:
-                            messages.error(request, f"{field.replace('_', ' ').title()}: {error}")
-                if not profile_form.is_valid():
-                    for field, errors in profile_form.errors.items():
-                        for error in errors:
-                            messages.error(request, f"{field.replace('_', ' ').title()}: {error}")
+                # Re-render forms with errors
+                document_form = DocumentForm()
+                payout = Payout.objects.filter(user=user).first()
+                payout_form = PayoutForm(instance=payout) if payout else PayoutForm()
+                documents = Document.objects.filter(user=user)
+                payouts = Payout.objects.filter(user=user)
+                uploaded_document_types = documents.values_list('document_type', flat=True)
+                
+                context = {
+                    'user_form': user_form,
+                    'profile_form': profile_form,
+                    'working_form': working_form,
+                    'document_form': document_form,
+                    'payout_form': payout_form,
+                    'documents': documents,
+                    'payouts': payouts,
+                    'profile': profile,
+                    'action': 'Update',
+                    'uploaded_document_types': uploaded_document_types,
+                    'profile_picture': profile.profile_picture if profile.profile_picture else None,
+                    'active_tab': 'profile'
+                }
+                return render(request, self.template_name, context)
 
         elif section == 'work':
             user_form = UserForm(instance=user)
@@ -320,7 +350,29 @@ class EmployeeEditView(UpdateView):
                 except Exception as e:
                     messages.error(request, f"Error updating work details: {str(e)}")
             else:
-                messages.error(request, "Please correct the errors below.")
+                # Re-render forms with errors
+                document_form = DocumentForm()
+                payout = Payout.objects.filter(user=user).first()
+                payout_form = PayoutForm(instance=payout) if payout else PayoutForm()
+                documents = Document.objects.filter(user=user)
+                payouts = Payout.objects.filter(user=user)
+                uploaded_document_types = documents.values_list('document_type', flat=True)
+                
+                context = {
+                    'user_form': user_form,
+                    'profile_form': profile_form,
+                    'working_form': working_form,
+                    'document_form': document_form,
+                    'payout_form': payout_form,
+                    'documents': documents,
+                    'payouts': payouts,
+                    'profile': profile,
+                    'action': 'Update',
+                    'uploaded_document_types': uploaded_document_types,
+                    'profile_picture': profile.profile_picture if profile.profile_picture else None,
+                    'active_tab': 'work'
+                }
+                return render(request, self.template_name, context)
 
         elif section == 'document':
             user_form = UserForm(instance=user)
@@ -410,7 +462,27 @@ class EmployeeEditView(UpdateView):
                 except Exception as e:
                     messages.error(request, f"Error saving payout: {str(e)}")
             else:
-                messages.error(request, "Please correct the payout form errors.")
+                # Re-render forms with errors
+                document_form = DocumentForm()
+                documents = Document.objects.filter(user=user)
+                payouts = Payout.objects.filter(user=user)
+                uploaded_document_types = documents.values_list('document_type', flat=True)
+                
+                context = {
+                    'user_form': user_form,
+                    'profile_form': profile_form,
+                    'working_form': working_form,
+                    'document_form': document_form,
+                    'payout_form': payout_form,
+                    'documents': documents,
+                    'payouts': payouts,
+                    'profile': profile,
+                    'action': 'Update',
+                    'uploaded_document_types': uploaded_document_types,
+                    'profile_picture': profile.profile_picture if profile.profile_picture else None,
+                    'active_tab': 'payout'
+                }
+                return render(request, self.template_name, context)
             
             return redirect(f"{reverse('user:employee_edit', kwargs={'pk': user.id})}?tab=payout")
 
