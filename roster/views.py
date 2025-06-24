@@ -119,6 +119,12 @@ class RosterListView(ListView):
         department_id = self.request.GET.get("department")
         employee_id = self.request.GET.get("employee")
 
+        # if employee_id is empty and if auth user is not superuser then set employee_id to auth user id
+        if not employee_id and not self.request.user.is_superuser:
+            employee_id = str(self.request.user.id) if self.request.user.is_authenticated else None
+        else:
+            employee_id = str(employee_id) if employee_id else None
+
         if input_date:
             try:
                 date = nepali_str_to_english(input_date)
@@ -126,11 +132,12 @@ class RosterListView(ListView):
                 date = timezone.now().date()
         else:
             date = timezone.now().date()
+            input_date = english_to_nepali(date)
 
         week_info = get_week_days(date)
 
         # Get users
-        all_users_qs = AuthUser.objects.filter(is_active=True)
+        all_users_qs = AuthUser.get_active_users()
         if department_id:
             all_users_qs = all_users_qs.filter(working_detail__department_id=department_id)
         
@@ -165,7 +172,6 @@ class RosterListView(ListView):
             'selected_employee': employee_id,
             'roster_map': roster_map,
         })
-
         return context
 
 @require_POST

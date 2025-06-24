@@ -47,7 +47,7 @@ class SalaryReleaseForm(forms.ModelForm):
 
                 # Get current Nepali month
                 nepali_date_str = nepali_datetime.date.today().strftime('%Y-%m-%d')
-                current_month = int(nepali_date_str.split('-')[1])  # FIXED here
+                current_month = int(nepali_date_str.split('-')[1])
                 # current_month = 3
 
                 self.initial['month'] = current_month

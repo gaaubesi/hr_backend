@@ -75,7 +75,18 @@
                 <td>{{ request.get_type_display }}</td>
                 <td>{{ request.date }}</td>
                 <td>{{ request.time }}</td>
-                <td>{{ request.get_status_display }}</td>
+                <td>
+                    <span class ="badge
+                        {% if request.status == 'pending' %}bg-primary
+                        {% elif request.status == 'forwarded' %}bg-info
+                        {% elif request.status == 'approved' %}bg-success
+                        {% elif request.status == 'rejected' %}bg-danger
+                        {% elif request.status == 'cancelled' %}bg-warning
+                        {% else %}bg-light text-dark
+                        {% endif %}">
+                        {{ request.get_status_display }}
+                    </span>
+                </td>
                 <td>
                     {% if request.pk %}
                         {% if request.status == 'pending' or request.status == 'forwarded' %}

@@ -436,7 +436,7 @@ class EmployeeLeaveReportView(ListView):
         context.update({
             'employee': request_data.get('employee', ''),
             'leave_type': request_data.get('leave_type', ''),
-            'employees': AuthUser.objects.filter(is_active=True),
+            'employees': AuthUser.get_active_users(),
             'leave_types': LeaveType.objects.filter(status='active'),
         })
         return context

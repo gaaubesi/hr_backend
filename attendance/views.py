@@ -195,7 +195,9 @@ class AttendanceRequestListView(ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['request_status_choices'] = RequestStatus.choices
-        context['employees'] = self.request.user.__class__.objects.all()  # Get all users
+        # context['employees'] = self.request.user.__class__.objects.all()  # Get all users
+        context['employees'] = AuthUser.get_active_users()
+
         
         # Add current filter values to context
         if self.request.method == 'POST':
@@ -459,7 +461,7 @@ class CalendarViewReport(LoginRequiredMixin, ListView):
                         attendance_dict[single_date].append("On Leave")
 
         # Filter users
-        all_users_qs = AuthUser.objects.filter(is_active=True)
+        all_users_qs = AuthUser.get_active_users()
         if department_id:
             all_users_qs = all_users_qs.filter(working_detail__department_id=department_id)
         filtered_users_qs = all_users_qs
@@ -472,9 +474,9 @@ class CalendarViewReport(LoginRequiredMixin, ListView):
             'filtered_users': filtered_users_qs.order_by('first_name'),
             'nepali_months': NepaliMonthList,
             'selected_department': department_id,
-            'selected_employee': employee_id,
+            'selected_employee': str(employee_id),
             'year': bs_year,
-            'selected_month': bs_month,
+            'selected_month': int(bs_month),
             'days_in_month': range(1, days_in_month + 1),
             'attendance_dict': attendance_dict,
             'first_day_weekday': first_day_weekday,

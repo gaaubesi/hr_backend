@@ -51,7 +51,7 @@ class AuthUser(AbstractUser):
     
     @classmethod
     def get_active_users(cls):
-        return cls.objects.filter(is_active=True).order_by('first_name')
+        return cls.objects.filter(is_active=True, is_superuser=False).order_by('first_name')
     
     def __str__(self):
         return self.username

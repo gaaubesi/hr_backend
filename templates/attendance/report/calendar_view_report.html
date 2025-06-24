@@ -50,7 +50,7 @@
                 <select name="month" class="form-select" required>
                     <option value="">Select Month</option>
                     {% for value, label in nepali_months %}
-                        <option value="{{ value }}" {% if month == value %}selected{% endif %}>
+                        <option value="{{ value }}" {% if selected_month == value %}selected{% endif %}>
                             {{ label }}
                         </option>
                     {% endfor %}

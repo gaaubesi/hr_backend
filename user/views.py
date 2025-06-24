@@ -49,7 +49,7 @@ class EmployeeListView(ListView):
         context['job_types'] = JobType.choices
         
         # Get list of usernames for the select dropdown
-        context['usernames'] = AuthUser.objects.filter(is_active=True).values_list('username', flat=True).distinct().order_by('username')
+        context['usernames'] = AuthUser.get_active_users().values_list('username', flat=True).distinct().order_by('username')
         
         # Add current filter values to context from either POST or GET
         request_data = self.request.POST if self.request.method == 'POST' else self.request.GET
@@ -203,7 +203,7 @@ class EmployeeCreateView(View):
 
 class EmployeeEditView(UpdateView):
     template_name = 'user/employee/create.html'
-    success_url = reverse_lazy('user:employee_list')
+    # success_url = reverse_lazy('user:employee_list')
 
     def get(self, request, *args, **kwargs):
         user = get_object_or_404(AuthUser, pk=kwargs['pk'])
@@ -269,7 +269,7 @@ class EmployeeEditView(UpdateView):
                             assignLeaveToEmployee(user)
                         
                         messages.success(request, "Profile details updated successfully.")
-                        return redirect('user:employee_list')
+                        return redirect('user:employee_edit', pk=user.id)
                 except Exception as e:
                     messages.error(request, f"Error updating profile: {str(e)}")
             else:
