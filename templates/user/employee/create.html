@@ -437,6 +437,53 @@
         </div>
     </div>
 </div>
+
+<!-- Bank Detail Edit Modals -->
+{% for bank_detail in bank_details %}
+<div class="modal fade" id="editBankDetailModal{{ bank_detail.id }}" tabindex="-1" role="dialog" aria-labelledby="editBankDetailLabel{{ bank_detail.id }}" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="editBankDetailLabel{{ bank_detail.id }}">Edit Bank Detail</h5>
+                <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{% url 'user:edit_bank_detail' bank_detail.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="edit_bank_name_{{ bank_detail.id }}" class="form-label">Bank Name</label>
+                        <input type="text" class="form-control" id="edit_bank_name_{{ bank_detail.id }}" name="bank_name" value="{{ bank_detail.bank_name }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_bank_username_{{ bank_detail.id }}" class="form-label">Bank Username</label>
+                        <input type="text" class="form-control" id="edit_bank_username_{{ bank_detail.id }}" name="bank_username" value="{{ bank_detail.bank_username|default:'' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_branch_{{ bank_detail.id }}" class="form-label">Branch</label>
+                        <input type="text" class="form-control" id="edit_branch_{{ bank_detail.id }}" name="branch" value="{{ bank_detail.branch }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_account_number_{{ bank_detail.id }}" class="form-label">Account Number</label>
+                        <input type="text" class="form-control" id="edit_account_number_{{ bank_detail.id }}" name="account_number" value="{{ bank_detail.account_number }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="edit_is_primary_{{ bank_detail.id }}" name="is_primary" {% if bank_detail.is_primary %}checked{% endif %}>
+                            <label class="form-check-label" for="edit_is_primary_{{ bank_detail.id }}">
+                                Set as Primary
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Update</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
 {% endblock content %}
 
 {% block scripts %}

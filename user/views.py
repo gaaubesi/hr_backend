@@ -194,7 +194,7 @@ class EmployeeCreateView(View):
                     BankDetail.objects.filter(account_holder=user, is_primary=True).update(is_primary=False)
                 
                 bank_detail.save()
-                messages.success(request, "Bank details saved successfully.")
+                messages.success(request, "Bank details updated successfully.")
             except Exception as e:
                 messages.error(request, f"Error saving bank details: {str(e)}")
         else:
@@ -222,9 +222,12 @@ class EmployeeEditView(UpdateView):
         payout = Payout.objects.filter(user=user).first()
         payout_form = PayoutForm(instance=payout) if payout else PayoutForm()
         
-        # Get bank details
+        # Get bank details and prefill the form
         bank_details = BankDetail.objects.filter(account_holder=user)
-        bank_detail_form = BankDetailForm()
+        # Prefill with primary bank detail if exists, otherwise first one
+        primary_bank_detail = bank_details.filter(is_primary=True).first()
+        bank_detail_to_prefill = primary_bank_detail if primary_bank_detail else bank_details.first()
+        bank_detail_form = BankDetailForm(instance=bank_detail_to_prefill) if bank_detail_to_prefill else BankDetailForm()
         
         documents = Document.objects.filter(user=user)
         payouts = Payout.objects.filter(user=user)
@@ -288,6 +291,11 @@ class EmployeeEditView(UpdateView):
                 payout_form = PayoutForm(instance=payout) if payout else PayoutForm()
                 documents = Document.objects.filter(user=user)
                 payouts = Payout.objects.filter(user=user)
+                bank_details = BankDetail.objects.filter(account_holder=user)
+                # Prefill with primary bank detail if exists, otherwise first one
+                primary_bank_detail = bank_details.filter(is_primary=True).first()
+                bank_detail_to_prefill = primary_bank_detail if primary_bank_detail else bank_details.first()
+                bank_detail_form = BankDetailForm(instance=bank_detail_to_prefill) if bank_detail_to_prefill else BankDetailForm()
                 uploaded_document_types = documents.values_list('document_type', flat=True)
                 
                 context = {
@@ -296,8 +304,10 @@ class EmployeeEditView(UpdateView):
                     'working_form': working_form,
                     'document_form': document_form,
                     'payout_form': payout_form,
+                    'bank_detail_form': bank_detail_form,
                     'documents': documents,
                     'payouts': payouts,
+                    'bank_details': bank_details,
                     'profile': profile,
                     'action': 'Update',
                     'uploaded_document_types': uploaded_document_types,
@@ -331,6 +341,11 @@ class EmployeeEditView(UpdateView):
                 payout_form = PayoutForm(instance=payout) if payout else PayoutForm()
                 documents = Document.objects.filter(user=user)
                 payouts = Payout.objects.filter(user=user)
+                bank_details = BankDetail.objects.filter(account_holder=user)
+                # Prefill with primary bank detail if exists, otherwise first one
+                primary_bank_detail = bank_details.filter(is_primary=True).first()
+                bank_detail_to_prefill = primary_bank_detail if primary_bank_detail else bank_details.first()
+                bank_detail_form = BankDetailForm(instance=bank_detail_to_prefill) if bank_detail_to_prefill else BankDetailForm()
                 uploaded_document_types = documents.values_list('document_type', flat=True)
                 
                 context = {
@@ -339,8 +354,10 @@ class EmployeeEditView(UpdateView):
                     'working_form': working_form,
                     'document_form': document_form,
                     'payout_form': payout_form,
+                    'bank_detail_form': bank_detail_form,
                     'documents': documents,
                     'payouts': payouts,
+                    'bank_details': bank_details,
                     'profile': profile,
                     'action': 'Update',
                     'uploaded_document_types': uploaded_document_types,
@@ -391,6 +408,7 @@ class EmployeeEditView(UpdateView):
                     # Convert issue_body ID to District instance
                     issue_body = None
                     if form_data['issue_body'] and form_data['document_type'] != 'resume':
+                        
                         try:
                             issue_body = District.objects.get(id=form_data['issue_body'])
                         except District.DoesNotExist:
@@ -441,6 +459,11 @@ class EmployeeEditView(UpdateView):
                 document_form = DocumentForm()
                 documents = Document.objects.filter(user=user)
                 payouts = Payout.objects.filter(user=user)
+                bank_details = BankDetail.objects.filter(account_holder=user)
+                # Prefill with primary bank detail if exists, otherwise first one
+                primary_bank_detail = bank_details.filter(is_primary=True).first()
+                bank_detail_to_prefill = primary_bank_detail if primary_bank_detail else bank_details.first()
+                bank_detail_form = BankDetailForm(instance=bank_detail_to_prefill) if bank_detail_to_prefill else BankDetailForm()
                 uploaded_document_types = documents.values_list('document_type', flat=True)
                 
                 context = {
@@ -449,8 +472,10 @@ class EmployeeEditView(UpdateView):
                     'working_form': working_form,
                     'document_form': document_form,
                     'payout_form': payout_form,
+                    'bank_detail_form': bank_detail_form,
                     'documents': documents,
                     'payouts': payouts,
+                    'bank_details': bank_details,
                     'profile': profile,
                     'action': 'Update',
                     'uploaded_document_types': uploaded_document_types,
@@ -475,7 +500,12 @@ class EmployeeEditView(UpdateView):
             bank_details = BankDetail.objects.filter(account_holder=user)
             uploaded_document_types = documents.values_list('document_type', flat=True)
             
-            bank_detail_form = BankDetailForm(request.POST)
+            # Check if we're updating an existing bank detail or creating a new one
+            # Look for primary bank detail first, then first one
+            primary_bank_detail = bank_details.filter(is_primary=True).first()
+            existing_bank_detail = primary_bank_detail if primary_bank_detail else bank_details.first()
+            
+            bank_detail_form = BankDetailForm(request.POST, instance=existing_bank_detail)
             
             if bank_detail_form.is_valid():
                 try:
@@ -484,10 +514,10 @@ class EmployeeEditView(UpdateView):
                     
                     # If this is marked as primary, unmark other bank details as primary
                     if bank_detail.is_primary:
-                        BankDetail.objects.filter(account_holder=user, is_primary=True).update(is_primary=False)
+                        BankDetail.objects.filter(account_holder=user, is_primary=True).exclude(pk=bank_detail.pk if bank_detail.pk else 0).update(is_primary=False)
                     
                     bank_detail.save()
-                    messages.success(request, "Bank details saved successfully.")
+                    messages.success(request, "Bank details updated successfully.")
                 except Exception as e:
                     messages.error(request, f"Error saving bank details: {str(e)}")
             else:
@@ -511,13 +541,18 @@ class EmployeeEditView(UpdateView):
                 return render(request, self.template_name, context)
             
             # After successful save, redirect with context that includes existing bank details
+            # Prefill with primary bank detail if exists, otherwise first one
+            primary_bank_detail = bank_details.filter(is_primary=True).first()
+            bank_detail_to_prefill = primary_bank_detail if primary_bank_detail else bank_details.first()
+            bank_detail_form = BankDetailForm(instance=bank_detail_to_prefill) if bank_detail_to_prefill else BankDetailForm()
+            
             context = {
                 'user_form': user_form,
                 'profile_form': profile_form,
                 'working_form': working_form,
                 'document_form': document_form,
                 'payout_form': payout_form,
-                'bank_detail_form': BankDetailForm(),  # Empty form for new entry
+                'bank_detail_form': bank_detail_form,
                 'documents': documents,
                 'payouts': payouts,
                 'bank_details': bank_details,
