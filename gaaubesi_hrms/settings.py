@@ -158,5 +158,8 @@ LOGIN_URL = 'user/login'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'user.AuthUser'
 
+# Default password for new users
+DEFAULT_USER_PASSWORD = 'deli@gbl2079'
+
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"

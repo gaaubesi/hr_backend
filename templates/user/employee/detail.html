@@ -74,7 +74,7 @@
                     <div class="col-md-6">
                         <table class="table table-borderless">
                             <tr>
-                                <th style="width: 150px;">Gender:</th>
+                                <th style="width: 180px;">Gender:</th>
                                 <td>{{ profile.get_gender_display }}</td>
                             </tr>
                             <tr>
@@ -253,37 +253,45 @@
         Bank Details
     </div>
     <div class="card-body">
-        <div class="row">
-            {% for bank_detail in bank_details %}
-            <div class="col-md-6 mb-3">
-                <div class="card">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <h6 class="card-title mb-0">
-                                {{ bank_detail.bank_name }}
-                                {% if bank_detail.is_primary %}
-                                    <span class="badge bg-primary ms-1">Primary</span>
-                                {% endif %}
-                            </h6>
-                        </div>
-                        <div class="small text-muted">
-                            <div><strong>Branch:</strong> {{ bank_detail.branch }}</div>
-                            <div><strong>Account Number:</strong> {{ bank_detail.account_number }}</div>
-                            {% if bank_detail.bank_username %}
-                                <div><strong>Username:</strong> {{ bank_detail.bank_username }}</div>
+        {% for bank_detail in bank_details %}
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <table class="table table-borderless">
+                    <tr>
+                        <th style="width: 180px;">Bank Name:</th>
+                        <td>
+                            {{ bank_detail.bank_name }}
+                            {% if bank_detail.is_primary %}
+                                <span class="badge bg-primary ms-1">Primary</span>
                             {% endif %}
-                        </div>
-                    </div>
-                </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Branch:</th>
+                        <td>{{ bank_detail.branch }}</td>
+                    </tr>
+                    <tr>
+                        <th>Account Number:</th>
+                        <td>{{ bank_detail.account_number }}</td>
+                    </tr>
+                    {% if bank_detail.bank_username %}
+                    <tr>
+                        <th>Username:</th>
+                        <td>{{ bank_detail.bank_username }}</td>
+                    </tr>
+                    {% endif %}
+                </table>
             </div>
-            {% empty %}
+        </div>
+        {% empty %}
+        <div class="row">
             <div class="col-12">
                 <div class="alert alert-info mb-0">
                     <i class="fas fa-info-circle me-2"></i>No bank details available yet.
                 </div>
             </div>
-            {% endfor %}
         </div>
+        {% endfor %}
     </div>
 </div>
     </div>
