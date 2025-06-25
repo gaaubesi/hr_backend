@@ -13,17 +13,22 @@
 {% block content %}
     <div class="row">
         <div class="col-xxl">
-            <div class="mb-3 d-flex justify-content-start">
-                <a class="btn btn-outline-info btn-sm" href="{% url 'setup:setup_list' %}">
-                    Setup List
-                </a>
-            </div>
-
             <div class="card mb-6">
                 <div class="card-header d-flex align-items-center justify-content-between">
-                    <h5 class="mb-0">{% if action == 'Create' %}Create Setup{% else %}Update Setup{% endif %}</h5>
+                    <h5 class="mb-0">
+                        <i class="fas fa-cog text-primary me-2"></i>
+                        {% if action == 'Create' %}Create Setup{% else %}Update Setup{% endif %}
+                    </h5>
                 </div>
                 <div class="card-body">
+                    {% if setup %}
+                        <div class="alert alert-info mb-4">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Current Setup:</strong> Calendar Type: {{ setup.get_calendar_type_display }}, 
+                            Shift Threshold: {{ setup.shift_threshold }} minutes
+                        </div>
+                    {% endif %}
+                    
                     <form method="POST">
                         {% csrf_token %}
                         {{ form|crispy }}
@@ -31,7 +36,9 @@
                         <div class="row justify-content-center">
                             <div class="col-sm-6 text-center">
                                 <button type="submit" class="btn btn-success">{{ action }}</button>
-                                <a href="{% url 'setup:setup_list' %}" class="btn btn-warning">Cancel</a>
+                                {% if setup %}
+                                    <a href="{% url 'dashboard' %}" class="btn btn-warning">Cancel</a>
+                                {% endif %}
                             </div>
                         </div>
                     </form>
