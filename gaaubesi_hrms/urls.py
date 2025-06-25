@@ -21,6 +21,7 @@ urlpatterns = [
     path('departments/', include('department.urls', namespace='department')),
     path('branch/', include('branch.urls', namespace='branch')),
     path('payout/', include('payout.urls', namespace='payout')),
+    path('setup/', include('setup.urls', namespace='setup')),
 ]
 
 if settings.DEBUG:
