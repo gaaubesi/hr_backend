@@ -25,9 +25,11 @@
                     <select class="select2 form-control" id="fiscal_year" name="fiscal_year" style="width: 250px;">
                         <option value="">All</option>
                         {% for year in fiscal_years %}
-                            <option value="{{ year.id }}" {% if fiscal_year|add:""|stringformat:"s" == year.id|stringformat:"s" %}selected{% endif %}>
+                            <option value="{{ year.id }}" 
+                                {% if fiscal_year == year.id %}selected{% endif %}>
                                 {{ year.fiscal_year }}
                             </option>
+
                         {% endfor %}
                     </select>
                 </div>

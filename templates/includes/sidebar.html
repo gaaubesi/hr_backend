@@ -39,11 +39,13 @@
                     </a>
                 </li>
                 <li class="menu-item {% if current_url == 'roster:roster_list'%}active{% endif %}">
-                    <a href="{% url 'roster:roster_list' %}" class="menu-link {% if current_url == 'roster:roster_list' %}bg-primary text-white fw-bold{% else %}text-white{% endif %}">
+                    <a href="{% url 'roster:roster_list' %}{% if not request.user.is_superuser %}?employee={{ request.user.id }}{% endif %}"
+                    class="menu-link {% if current_url == 'roster:roster_list' %}bg-primary text-white fw-bold{% else %}text-white{% endif %}">
                         <i class="menu-icon fas fa-calendar-week fs-5 me-2"></i>
                         Roster
                     </a>
                 </li>
+
             </ul>
         </li>
 

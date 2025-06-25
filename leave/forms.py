@@ -49,6 +49,15 @@ class LeaveTypeForm(forms.ModelForm):
         self.fields['branches'].queryset = Branch.objects.all()
         self.fields['departments'].queryset = Department.objects.all()
 
+        # Only apply default if creating a new LeaveType (not editing)
+        if not self.instance.pk:
+            try:
+                current_fy = FiscalYear.current_fiscal_year()
+                if current_fy:
+                    self.initial['fiscal_year'] = current_fy.id
+            except FiscalYear.DoesNotExist:
+                pass
+
 
 #Leave
 class LeaveForm(forms.ModelForm):
