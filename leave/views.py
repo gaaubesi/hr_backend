@@ -69,7 +69,9 @@ class LeaveTypeListView(ListView):
 
         fiscal_year = request_data.get('fiscal_year')
         if not fiscal_year:
-            fiscal_year = FiscalYear.current_fiscal_year().id
+            current_fiscal = FiscalYear.current_fiscal_year()
+            fiscal_year = current_fiscal.id if current_fiscal else None
+
         else:
             fiscal_year = int(fiscal_year)
 
