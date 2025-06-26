@@ -93,7 +93,6 @@ class Document(models.Model):
     DOCUMENT_TYPES = [
         ('citizenship_front', 'Citizenship Front'),
         ('citizenship_back', 'Citizenship Back'),
-        ('bank_details', 'Bank Details'),
         ('pan_card', 'PAN Card'),
         ('resume', 'Resume'),
         ('other', 'Other'),
@@ -102,6 +101,7 @@ class Document(models.Model):
     user = models.ForeignKey(AuthUser, related_name='documents', on_delete=models.CASCADE)
     document_type = models.CharField(max_length=50, choices=DOCUMENT_TYPES)
     document_file = models.FileField(null=True, upload_to='documents/', blank=True)
+    document_number = models.CharField(max_length=50, null=True, blank=True, verbose_name='Document Number')
     issue_body = models.ForeignKey('branch.District', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Issuing Authority')
     issue_date = models.DateField(null=True, verbose_name="Issue Date")
     uploaded_at = models.DateTimeField(auto_now_add=True)

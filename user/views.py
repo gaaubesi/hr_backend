@@ -124,6 +124,7 @@ class EmployeeCreateView(View):
                 index = key.split('-')[1]
                 doc_type = request.POST.get(f'document_type-{index}')
                 doc_file = request.FILES.get(f'document_file-{index}')
+                doc_number = request.POST.get(f'document_number-{index}')
                 issue_date = request.POST.get(f'issue_date-{index}')
                 issue_body = request.POST.get(f'issue_body-{index}')
 
@@ -135,6 +136,7 @@ class EmployeeCreateView(View):
                             document_file=doc_file
                         )
                         if doc_type != 'resume':
+                            doc.document_number = doc_number if doc_number else None
                             doc.issue_date = nepali_str_to_english(issue_date) if issue_date else None
                             doc.issue_body = District.objects.get(id=issue_body) if issue_body else None
                         doc.save()
@@ -325,6 +327,7 @@ class EmployeeEditView(UpdateView):
                     index = key.split('-')[1]
                     document_type = request.POST.get(f'document_type-{index}')
                     document_file = request.FILES.get(f'document_file-{index}')
+                    document_number = request.POST.get(f'document_number-{index}')
                     issue_date = request.POST.get(f'issue_date-{index}')
                     issue_body = request.POST.get(f'issue_body-{index}')
                     
@@ -332,6 +335,7 @@ class EmployeeEditView(UpdateView):
                         document_forms.append({
                             'document_type': document_type,
                             'document_file': document_file,
+                            'document_number': document_number,
                             'issue_date': issue_date,
                             'issue_body': issue_body
                         })
@@ -365,6 +369,7 @@ class EmployeeEditView(UpdateView):
                         user=user,
                         document_type=form_data['document_type'],
                         document_file=form_data['document_file'],
+                        document_number=form_data['document_number'] if form_data['document_type'] != 'resume' else None,
                         issue_date=issue_date,
                         issue_body=issue_body
                     )
@@ -498,6 +503,7 @@ class EditDocumentView(View):
         # Get form data
         document_type = request.POST.get('document_type')
         document_file = request.FILES.get('document_file')
+        document_number = request.POST.get('document_number')
         issue_date = request.POST.get('issue_date')
         issue_body = request.POST.get('issue_body')
         
@@ -505,12 +511,15 @@ class EditDocumentView(View):
             # Update document fields
             if document_type:
                 document.document_type = document_type
-                # Clear issue date and issuing authority for Resume documents
+                # Clear issue date, issuing authority, and document number for Resume documents
                 if document_type == 'resume':
                     document.issue_date = None
                     document.issue_body = None
+                    document.document_number = None
             if document_file:
                 document.document_file = document_file
+            if document_number is not None and document_type != 'resume':
+                document.document_number = document_number
             if issue_date and document_type != 'resume':
                 try:
                     # Convert Nepali date to English date

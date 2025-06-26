@@ -180,7 +180,7 @@
                                 <div id="document-forms">
                                     <div class="document-form-item mb-3">
                                         <div class="row g-3">
-                                            <div class="col-md-3 pe-2">
+                                            <div class="col-md-2 pe-2">
                                                 <label for="id_document_type-0">Document Type <span class="asteriskField">*</span></label>
                                                 <select name="document_type-0" id="id_document_type-0" class="form-select document-type-select" required>
                                                     {% comment %} <option value="">Select Document Type</option> {% endcomment %}
@@ -189,9 +189,13 @@
                                                     {% endfor %}
                                                 </select>
                                             </div>
-                                            <div class="col-md-3 px-2">
+                                            <div class="col-md-2 px-2">
                                                 <label for="id_document_file-0">Document File <span class="asteriskField">*</span></label>
                                                 <input type="file" name="document_file-0" id="id_document_file-0" class="form-control" required>
+                                            </div>
+                                            <div class="col-md-2 px-2">
+                                                <label for="id_document_number-0">Document Number <span class="asteriskField">*</span></label>
+                                                <input type="text" name="document_number-0" id="id_document_number-0" class="form-control" placeholder="Enter doc number" required> 
                                             </div>
                                             <div class="col-md-3 px-2">
                                                 <label for="id_issue_date-0">Issue Date</label>
@@ -251,6 +255,12 @@
                                             </span>
                                         </div>
                                         <div class="small text-muted mb-2">
+                                            {% if document.document_number %}
+                                                <div>Document Number: {{ document.document_number }}</div>
+                                            {% else %}
+                                                <div style="visibility: hidden;">Document Number placeholder</div>
+                                            {% endif %}
+                                            
                                             {% if document.issue_date %}
                                                 <div>Issue Date: {{ document.issue_date|to_nepali_date }}</div>
                                             {% else %}
@@ -344,6 +354,10 @@
                                                     <label for="edit_document_file_{{ document.id }}" class="form-label">Document File (Optional - leave empty to keep current file)</label>
                                                     <input type="file" name="document_file" id="edit_document_file_{{ document.id }}" class="form-control" accept="image/*,.pdf,.doc,.docx">
                                                     <small class="text-muted">Current file: {{ document.document_file.name }}</small>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label for="edit_document_number_{{ document.id }}" class="form-label">Document Number<span class="asteriskField">*</span></label>
+                                                    <input type="text" name="document_number" id="edit_document_number_{{ document.id }}" class="form-control" placeholder="Enter document number" value="{{ document.document_number|default:'' }}">
                                                 </div>
                                                 <div class="mb-3">
                                                     <label for="edit_issue_date_{{ document.id }}" class="form-label">Issue Date</label>
@@ -470,19 +484,23 @@
                 
                // Add toggle functionality for edit modal
                 const editDocumentTypeSelect = editModal.find('select[name="document_type"]');
+                const editDocumentNumberField = editModal.find('input[name="document_number"]');
                 const editIssueDateField = editModal.find('input[name="issue_date"]');
                 const editIssueBodyField = editModal.find('select[name="issue_body"]');
+                const editDocumentNumberLabel = editModal.find('label[for^="edit_document_number_"]');
                 const editIssueDateLabel = editModal.find('label[for^="edit_issue_date_"]');
                 const editIssueBodyLabel = editModal.find('label[for^="edit_issue_body_"]');
 
                 function toggleEditIssueFields() {
-                    // Hide issue date and issuing authority fields by default
+                    // Hide document number, issue date and issuing authority fields by default
+                    editDocumentNumberField.closest('.mb-3').hide();
                     editIssueDateField.closest('.mb-3').hide();
                     editIssueBodyField.closest('.mb-3').hide();
 
                     // Show for specific document types
                     const docType = editDocumentTypeSelect.val();
                     if (docType === 'citizenship_front' || docType === 'citizenship_back' || docType === 'pan_card') {
+                        editDocumentNumberField.closest('.mb-3').show();
                         editIssueDateField.closest('.mb-3').show();
                         editIssueBodyField.closest('.mb-3').show();
                     }
@@ -530,17 +548,25 @@
         // Function to toggle issue date and issuing authority fields based on document type
         function toggleIssueFields(documentTypeSelect) {
             const formItem = documentTypeSelect.closest('.document-form-item');
+            const documentNumberField = formItem.querySelector('input[name^="document_number-"]');
             const issueDateField = formItem.querySelector('input[name^="issue_date-"]');
             const issueBodyField = formItem.querySelector('select[name^="issue_body-"]');
+            const documentNumberLabel = formItem.querySelector('label[for^="id_document_number-"]');
             const issueDateLabel = formItem.querySelector('label[for^="id_issue_date-"]');
             const issueBodyLabel = formItem.querySelector('label[for^="id_issue_body-"]');
             
-            // Hide issue date and issuing authority fields by default
+            // Hide document number, issue date and issuing authority fields by default
+            if (documentNumberField) {
+                documentNumberField.closest('.col-md-2').style.display = 'none';
+            }
             if (issueDateField) {
                 issueDateField.closest('.col-md-3').style.display = 'none';
             }
             if (issueBodyField) {
                 issueBodyField.closest('.col-md-3').style.display = 'none';
+            }
+            if (documentNumberLabel) {
+                documentNumberLabel.closest('.col-md-2').style.display = 'none';
             }
             if (issueDateLabel) {
                 issueDateLabel.closest('.col-md-3').style.display = 'none';
@@ -549,13 +575,19 @@
                 issueBodyLabel.closest('.col-md-3').style.display = 'none';
             }
             
-            // Only show issue date and issuing authority fields for Citizenship Front,  Citizenship Back and Pan Card
+            // Only show document number, issue date and issuing authority fields for Citizenship Front,  Citizenship Back and Pan Card
             if (documentTypeSelect.value === 'citizenship_front' || documentTypeSelect.value === 'citizenship_back' || documentTypeSelect.value === 'pan_card') {
+                if (documentNumberField) {
+                    documentNumberField.closest('.col-md-2').style.display = 'block';
+                }
                 if (issueDateField) {
                     issueDateField.closest('.col-md-3').style.display = 'block';
                 }
                 if (issueBodyField) {
                     issueBodyField.closest('.col-md-3').style.display = 'block';
+                }
+                if (documentNumberLabel) {
+                    documentNumberLabel.closest('.col-md-2').style.display = 'block';
                 }
                 if (issueDateLabel) {
                     issueDateLabel.closest('.col-md-3').style.display = 'block';
