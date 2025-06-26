@@ -58,6 +58,19 @@
             </div>
 
             <div class="col-md-3">
+                <label class="form-label">Fiscal Year</label>
+                <select class="select2 form-control" id="fiscal_year" name="fiscal_year" style="width: 250px;">
+                    <!-- <option value="">All</option> -->
+                    {% for year in fiscal_years %}
+                        <option value="{{ year.id }}" 
+                            {% if fiscal_year == year.id %}selected{% endif %}>
+                            {{ year.fiscal_year }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-3">
                 <label class="form-label">Department</label>
                 <select name="department" id="departmentDropdown" class="form-select">
                     <option value="">All</option>
@@ -151,6 +164,11 @@
 {% block scripts %}
 <script>
     $(document).ready(function () {
+        // Initialize select2 for fiscal year
+        $('#fiscal_year').select2({
+            allowClear: true
+        });
+
         $('#departmentDropdown').on('change', function () {
             var departmentId = $(this).val();
             $.ajax({
