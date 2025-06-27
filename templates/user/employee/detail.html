@@ -151,6 +151,9 @@
                                 </div>
                             </div>
                             <div class="d-flex flex-column align-items-end me-3">
+                                {% if document.document_number %}
+                                <small class="mb-1 fw-bold">Document Number: {{ document.document_number }}</small>
+                                {% endif %}
                                 {% if document.issue_date %}
                                 <small class="mb-1 fw-bold">Issue Date: {{ document.issue_date|to_nepali_date }}</small>
                                 {% endif %}

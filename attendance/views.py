@@ -12,6 +12,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 import nepali_datetime
 
 from department.models import Department
+from fiscal_year.models import FiscalYear
 from leave.models import Leave
 from roster.models import Roster, RosterDetail, Shift
 from user.models import AuthUser
@@ -388,6 +389,14 @@ class CalendarViewReport(LoginRequiredMixin, ListView):
         request = self.request
         department_id = request.GET.get("department")
         employee_id = request.GET.get("employee") if request.GET.get("employee") else request.user.id
+        fiscal_year = request.GET.get("fiscal_year")
+
+        # Handle fiscal year filtering
+        if not fiscal_year:
+            current_fiscal = FiscalYear.current_fiscal_year()
+            fiscal_year = current_fiscal.id if current_fiscal else None
+        else:
+            fiscal_year = int(fiscal_year)
 
         nep_date = nepali_datetime.date.today()
 
@@ -426,6 +435,26 @@ class CalendarViewReport(LoginRequiredMixin, ListView):
             start_date__lte=end_ad_date,
             end_date__gte=start_ad_date
         ).select_related('leave_type')
+
+        # Filter by fiscal year if selected
+        if fiscal_year:
+            try:
+                selected_fiscal = FiscalYear.objects.get(id=fiscal_year)
+                # Filter attendance data within fiscal year range
+                attendance_qs = attendance_qs.filter(
+                    date__range=(selected_fiscal.start_date, selected_fiscal.end_date)
+                )
+                # Filter roster data within fiscal year range
+                rosters = rosters.filter(
+                    date__range=(selected_fiscal.start_date, selected_fiscal.end_date)
+                )
+                # Filter leave data within fiscal year range
+                leave_qs = leave_qs.filter(
+                    start_date__lte=selected_fiscal.end_date,
+                    end_date__gte=selected_fiscal.start_date
+                )
+            except FiscalYear.DoesNotExist:
+                pass
 
         first_day_weekday = (start_ad_date.weekday() + 1) % 7
         empty_days = [''] * first_day_weekday
@@ -475,6 +504,8 @@ class CalendarViewReport(LoginRequiredMixin, ListView):
             'nepali_months': NepaliMonthList,
             'selected_department': department_id,
             'selected_employee': str(employee_id),
+            'fiscal_year': fiscal_year,
+            'fiscal_years': FiscalYear.objects.filter(status='active'),
             'year': bs_year,
             'selected_month': int(bs_month),
             'days_in_month': range(1, days_in_month + 1),

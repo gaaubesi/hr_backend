@@ -122,8 +122,12 @@ class DocumentForm(forms.ModelForm):
     
     class Meta:
         model = Document
-        fields = ['document_type', 'document_file', 'issue_body', 'issue_date']
+        fields = ['document_type', 'document_file', 'document_number', 'issue_body', 'issue_date']
         widgets = {
+            'document_number': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Enter doc number'
+            }),
             'issue_body': forms.Select(attrs={
                 'class': 'form-control select2',
                 'data-placeholder': 'Select Issuing Authority'
