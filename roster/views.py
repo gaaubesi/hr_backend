@@ -1,4 +1,3 @@
-from datetime import timedelta
 from django.http import JsonResponse
 from django.utils import timezone
 
@@ -19,7 +18,7 @@ from collections import defaultdict
 from django.db.models import Prefetch
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
-from datetime import datetime
+from datetime import datetime, timedelta
 
 class ShiftListView(ListView):
     model = Shift
@@ -118,12 +117,7 @@ class RosterListView(ListView):
         input_date = self.request.GET.get("date")
         department_id = self.request.GET.get("department")
         employee_id = self.request.GET.get("employee")
-
-        # if employee_id is empty and if auth user is not superuser then set employee_id to auth user id
-        if not employee_id and not self.request.user.is_superuser:
-            employee_id = str(self.request.user.id) if self.request.user.is_authenticated else None
-        else:
-            employee_id = str(employee_id) if employee_id else None
+        employee_id = str(employee_id) if employee_id else None
 
         if input_date:
             try:
@@ -136,6 +130,14 @@ class RosterListView(ListView):
 
         week_info = get_week_days(date)
 
+        # Calculate max allowed date (end of next week)
+        current_week_info = get_week_days(timezone.now().date())
+        min_allowed_eng_date = current_week_info[0][0]
+        min_allowed_nep = english_to_nepali(min_allowed_eng_date)
+        max_allowed_eng_date = current_week_info[-1][0] + timedelta(days=7)
+        max_allowed_nep = english_to_nepali(max_allowed_eng_date)
+
+
         # Get users
         all_users_qs = AuthUser.get_active_users()
         if department_id:
@@ -144,7 +146,7 @@ class RosterListView(ListView):
         filtered_users_qs = all_users_qs
         if employee_id:
             filtered_users_qs = all_users_qs.filter(id=employee_id)
-
+        
         # Fetch rosters + shifts for the week in a single query
         start_date, end_date = week_info[0][0], week_info[-1][0]
         roster_qs = Roster.objects.filter(
@@ -165,8 +167,11 @@ class RosterListView(ListView):
             'all_departments': Department.objects.all().order_by('name'),
             'all_users': all_users_qs.order_by('first_name'),
             'filtered_users': filtered_users_qs.order_by('first_name'),
+            'team_member_count': filtered_users_qs.count(),
             'all_shifts': Shift.objects.all().order_by('title'),
             'days': week_info,
+            'min_allowed_date_nep': min_allowed_nep,
+            'max_allowed_date_nep': max_allowed_nep,
             'selected_date': input_date,
             'selected_department': department_id,
             'selected_employee': employee_id,

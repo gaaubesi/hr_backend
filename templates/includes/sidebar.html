@@ -39,11 +39,13 @@
                     </a>
                 </li>
                 <li class="menu-item {% if current_url == 'roster:roster_list'%}active{% endif %}">
-                    <a href="{% url 'roster:roster_list' %}" class="menu-link {% if current_url == 'roster:roster_list' %}bg-primary text-white fw-bold{% else %}text-white{% endif %}">
+                    <a href="{% url 'roster:roster_list' %}{% if not request.user.is_superuser %}?employee={{ request.user.id }}{% endif %}"
+                    class="menu-link {% if current_url == 'roster:roster_list' %}bg-primary text-white fw-bold{% else %}text-white{% endif %}">
                         <i class="menu-icon fas fa-calendar-week fs-5 me-2"></i>
                         Roster
                     </a>
                 </li>
+
             </ul>
         </li>
 
@@ -154,6 +156,13 @@
                     <a href="{% url 'department:department_list' %}" class="menu-link {% if current_url == 'department:department_list' %}bg-primary text-white fw-bold{% else %}text-white{% endif %}">
                         <i class="menu-icon fas fa-building fs-5 me-2 text-white"></i>
                         <span>Departments</span>
+                    </a>
+                </li>
+
+                <li class="menu-item mb-2 {% if current_url == 'department:department_list'%}active{% endif %}">
+                    <a href="{% url 'setup:setup_list' %}" class="menu-link {% if current_url == 'setup:setup_list' %}bg-primary text-white fw-bold{% else %}text-white{% endif %}">
+                        <i class="menu-icon fas fa-cog fs-5 me-2 text-white"></i>
+                        <span>Setup</span>
                     </a>
                 </li>
 

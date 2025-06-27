@@ -42,14 +42,19 @@ class LeaveTypeListView(ListView):
         fiscal_year = request_data.get('fiscal_year')
         marital_status = request_data.get('marital_status')
 
+        if not fiscal_year:
+            fiscal_year = FiscalYear.current_fiscal_year()
+        else:
+            fiscal_year = int(fiscal_year)
+
         if name:
             queryset = queryset.filter(name__icontains=name)
         if total_days:
             queryset = queryset.filter(number_of_days=total_days)
-        if fiscal_year:
-            queryset = queryset.filter(fiscal_year_id=fiscal_year)
         if marital_status:
             queryset = queryset.filter(marital_status=marital_status)
+            
+        queryset = queryset.filter(fiscal_year_id=fiscal_year)
 
         return queryset
 
@@ -62,18 +67,28 @@ class LeaveTypeListView(ListView):
         # Get filter values from either POST or GET
         request_data = self.request.POST if self.request.method == 'POST' else self.request.GET
 
+        fiscal_year = request_data.get('fiscal_year')
+        if not fiscal_year:
+            current_fiscal = FiscalYear.current_fiscal_year()
+            fiscal_year = current_fiscal.id if current_fiscal else None
+
+        else:
+            fiscal_year = int(fiscal_year)
+
         context.update({
             'name': request_data.get('name', ''),
             'total_days': request_data.get('total_days', ''),
-            'fiscal_year': request_data.get('fiscal_year', ''),
+            'fiscal_year': fiscal_year,
             'marital_status': request_data.get('marital_status', ''),
             'fiscal_years': FiscalYear.objects.filter(status='active'),
             'marital_status_choices': marital_status_choices,
         })
         return context
 
+
     def post(self, request, *args, **kwargs):
         return self.get(request, *args, **kwargs)
+
 
 class LeaveTypeCreateView(LoginRequiredMixin, CreateView):
     model = LeaveType
