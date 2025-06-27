@@ -1,5 +1,6 @@
 from django import forms
 
+from setup.models import Setup
 from utils.date_converter import english_to_nepali, nepali_str_to_english
 from .models import Profile, WorkingDetail, Document, Payout
 from .models import AuthUser
@@ -33,9 +34,6 @@ class ProfileForm(forms.ModelForm):
     class Meta:
         model = Profile
         fields = ('dob', 'gender', 'marital_status', 'address', 'mobile_number', 'personal_email', 'religion', 'blood_group')
-        widgets = {
-            'dob': forms.DateInput(attrs={'type': 'date'}),
-        }
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -53,6 +51,23 @@ class ProfileForm(forms.ModelForm):
         ]
 
         self.fields['mobile_number'].required = True
+
+        if Setup.get_calendar_type() == 'bs':
+            self.fields['dob'].widget = forms.TextInput(attrs={
+                'class': 'form-control nep_date',
+                'placeholder': 'YYYY-MM-DD (BS)',
+                'autocomplete': 'off'
+            })
+        else:
+            self.fields['dob'].widget = forms.DateInput(attrs={
+                'type': 'date',
+                'class': 'form-control'
+            })
+
+        if self.instance and self.instance.pk:
+            if self.instance.dob and Setup.get_calendar_type() == 'bs':
+                self.initial['dob'] = english_to_nepali(self.instance.dob)
+        
 
     def clean_mobile_number(self):
         mobile_number = self.cleaned_data.get('mobile_number')

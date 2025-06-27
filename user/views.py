@@ -9,6 +9,7 @@ from django.forms import modelformset_factory
 from django.conf import settings
 
 from leave.models import EmployeeLeave, LeaveType
+from setup.models import Setup
 from utils.common import point_down_round
 from utils.date_converter import nepali_str_to_english
 from .models import AuthUser, Profile, WorkingDetail, GENDER, MARITAL_STATUS, JobType, Document, Payout
@@ -18,7 +19,7 @@ from branch.models import District
 
 def get_common_context(user_form=None, profile_form=None, working_form=None,
                        document_form=None, payout_form=None, documents=None,
-                       payouts=None, profile=None, action='Create', active_tab=None):
+                       payouts=None, profile=None, action='Create', active_tab=None, calendar_type=None):
     return {
         'user_form': user_form or UserForm(prefix='user'),
         'profile_form': profile_form or ProfileForm(prefix='profile'),
@@ -30,6 +31,7 @@ def get_common_context(user_form=None, profile_form=None, working_form=None,
         'profile': profile,
         'action': action,
         'active_tab': active_tab,
+        'calendar_type': calendar_type,
     }
 
 
@@ -78,8 +80,9 @@ class EmployeeCreateView(View):
     template_name = 'user/employee/create.html'
     success_url = reverse_lazy('user:employee_list')
 
+    calendar_type = Setup.get_calendar_type()
     def get(self, request):
-        context = get_common_context(action='Create')
+        context = get_common_context(action='Create', calendar_type=self.calendar_type)
         return render(request, self.template_name, context)
 
     def post(self, request):
@@ -94,10 +97,16 @@ class EmployeeCreateView(View):
             try:
                 with transaction.atomic():
                     user = user_form.save(commit=False)
-                    user.set_password(settings.DEFAULT_USER_PASSWORD or 'deli@gbl2079')
+                    user.set_password(settings.DEFAULT_USER_PASSWORD)
                     user.save()
 
                     profile = profile_form.save(commit=False)
+                    if self.calendar_type == 'bs':
+                        dob = profile_form.cleaned_data['dob']
+                        profile.dob = nepali_str_to_english(str(dob)) if dob else None
+                    else:
+                        profile.dob = profile_form.cleaned_data['dob']
+
                     profile.user = user
                     profile.profile_picture = request.FILES.get('profile-profile_picture')
                     profile.save()
@@ -178,6 +187,7 @@ class EmployeeEditView(UpdateView):
     template_name = 'user/employee/create.html'
     # success_url = reverse_lazy('user:employee_list')
 
+    calendar_type = Setup.get_calendar_type()
     def get(self, request, *args, **kwargs):
         user = get_object_or_404(AuthUser, pk=kwargs['pk'])
         profile, _ = Profile.objects.get_or_create(user=user)
@@ -209,7 +219,8 @@ class EmployeeEditView(UpdateView):
             'profile': profile,
             'action': 'Update',
             'uploaded_document_types': uploaded_document_types,
-            'profile_picture': profile.profile_picture if profile.profile_picture else None
+            'profile_picture': profile.profile_picture if profile.profile_picture else None,
+            'calendar_type': self.calendar_type,
         }
         return render(request, self.template_name, context)
 
@@ -231,6 +242,12 @@ class EmployeeEditView(UpdateView):
                         user = user_form.save()
 
                         profile = profile_form.save(commit=False)
+                        if self.calendar_type == 'bs':
+                            dob = profile_form.cleaned_data['dob']
+                            profile.dob = nepali_str_to_english(str(dob)) if dob else None
+                        else:
+                            profile.dob = profile_form.cleaned_data['dob']
+                            
                         profile.user = user
                         # Handle profile picture upload
                         if 'profile-profile_picture' in request.FILES:

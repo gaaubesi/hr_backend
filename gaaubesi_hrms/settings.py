@@ -84,6 +84,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'utils.context_processor.check_active_sidebar_links',
+                # 'utils.context_processor.calendar_type',
 
             ],
         },
@@ -158,6 +159,7 @@ LOGIN_URL = 'user/login'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'user.AuthUser'
+DEFAULT_USER_PASSWORD = 'deli@gbl2079'
 
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"

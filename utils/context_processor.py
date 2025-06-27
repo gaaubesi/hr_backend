@@ -1,6 +1,9 @@
 # from django.urls import include
 
 
+# from setup.models import Setup
+
+
 def check_active_sidebar_links(request):
     current_url = f"{request.resolver_match.namespace}:{request.resolver_match.url_name}"
 
@@ -49,3 +52,7 @@ def check_active_sidebar_links(request):
         'payout_status': payout_status,
     }
     return context
+
+# def calendar_type(request):
+#     calendar_type = Setup.get_calendar_type()
+#     return calendar_type
