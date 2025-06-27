@@ -17,7 +17,7 @@ from branch.models import District
 
 
 def get_common_context(user_form=None, profile_form=None, working_form=None,
-                       document_form=None, payout_form=None, bank_detail_form=None, documents=None,
+                       document_form=None, payout_form=None, documents=None,
                        payouts=None, bank_details=None, profile=None, action='Create', active_tab=None):
     return {
         'user_form': user_form or UserForm(prefix='user'),
@@ -25,7 +25,6 @@ def get_common_context(user_form=None, profile_form=None, working_form=None,
         'working_form': working_form or WorkingDetailForm(prefix='work'),
         'document_form': document_form or DocumentForm(),
         'payout_form': payout_form or PayoutForm(),
-        'bank_detail_form': bank_detail_form or BankDetailForm(),
         'documents': documents or [],
         'payouts': payouts or [],
         'bank_details': bank_details or [],
@@ -182,23 +181,63 @@ class EmployeeCreateView(View):
             return redirect('user:employee_create')
 
         user = get_object_or_404(AuthUser, id=user_id)
-        bank_detail_form = BankDetailForm(request.POST)
-
-        if bank_detail_form.is_valid():
+        
+        # Get all bank detail forms from the request
+        bank_detail_forms = []
+        index = 0
+        
+        while True:
+            bank_name = request.POST.get(f'bank_name-{index}')
+            branch = request.POST.get(f'branch-{index}')
+            account_number = request.POST.get(f'account_number-{index}')
+            
+            if not bank_name or not branch or not account_number:
+                break
+                
+            bank_username = request.POST.get(f'bank_username-{index}', '')
+            is_primary = request.POST.get(f'is_primary-{index}') == 'on'
+            
+            # Create form data for this bank detail
+            form_data = {
+                'bank_name': bank_name,
+                'bank_username': bank_username,
+                'branch': branch,
+                'account_number': account_number,
+                'is_primary': is_primary,
+            }
+            
+            bank_detail_form = BankDetailForm(form_data)
+            bank_detail_forms.append(bank_detail_form)
+            index += 1
+        
+        if not bank_detail_forms:
+            messages.error(request, "Please provide at least one bank detail.")
+            context = get_common_context(active_tab='bank_detail')
+            return render(request, self.template_name, context)
+        
+        # Validate all forms
+        all_valid = all(form.is_valid() for form in bank_detail_forms)
+        
+        if all_valid:
             try:
-                bank_detail = bank_detail_form.save(commit=False)
-                bank_detail.account_holder = user
-                
-                # If this is marked as primary, unmark other bank details as primary
-                if bank_detail.is_primary:
-                    BankDetail.objects.filter(account_holder=user, is_primary=True).update(is_primary=False)
-                
-                bank_detail.save()
-                messages.success(request, "Bank details updated successfully.")
+                with transaction.atomic():
+                    # If any form has is_primary=True, unmark all existing primary bank details
+                    has_primary = any(form.cleaned_data.get('is_primary') for form in bank_detail_forms)
+                    if has_primary:
+                        BankDetail.objects.filter(account_holder=user, is_primary=True).update(is_primary=False)
+                    
+                    # Save all bank details
+                    for form in bank_detail_forms:
+                        bank_detail = form.save(commit=False)
+                        bank_detail.account_holder = user
+                        bank_detail.save()
+                    
+                    messages.success(request, "Bank details saved successfully.")
             except Exception as e:
                 messages.error(request, f"Error saving bank details: {str(e)}")
         else:
-            context = get_common_context(bank_detail_form=bank_detail_form, active_tab='bank_detail')
+            # Re-render with errors
+            context = get_common_context(active_tab='bank_detail')
             return render(request, self.template_name, context)
 
         return redirect(f"{reverse('user:employee_create')}?tab=bank_detail")
@@ -224,10 +263,6 @@ class EmployeeEditView(UpdateView):
         
         # Get bank details and prefill the form
         bank_details = BankDetail.objects.filter(account_holder=user)
-        # Prefill with primary bank detail if exists, otherwise first one
-        primary_bank_detail = bank_details.filter(is_primary=True).first()
-        bank_detail_to_prefill = primary_bank_detail if primary_bank_detail else bank_details.first()
-        bank_detail_form = BankDetailForm(instance=bank_detail_to_prefill) if bank_detail_to_prefill else BankDetailForm()
         
         documents = Document.objects.filter(user=user)
         payouts = Payout.objects.filter(user=user)
@@ -241,7 +276,6 @@ class EmployeeEditView(UpdateView):
             'working_form': working_form,
             'document_form': document_form,
             'payout_form': payout_form,
-            'bank_detail_form': bank_detail_form,
             'documents': documents,
             'payouts': payouts,
             'bank_details': bank_details,
@@ -292,11 +326,6 @@ class EmployeeEditView(UpdateView):
                 documents = Document.objects.filter(user=user)
                 payouts = Payout.objects.filter(user=user)
                 bank_details = BankDetail.objects.filter(account_holder=user)
-                # Prefill with primary bank detail if exists, otherwise first one
-                primary_bank_detail = bank_details.filter(is_primary=True).first()
-                bank_detail_to_prefill = primary_bank_detail if primary_bank_detail else bank_details.first()
-                bank_detail_form = BankDetailForm(instance=bank_detail_to_prefill) if bank_detail_to_prefill else BankDetailForm()
-                uploaded_document_types = documents.values_list('document_type', flat=True)
                 
                 context = {
                     'user_form': user_form,
@@ -304,13 +333,12 @@ class EmployeeEditView(UpdateView):
                     'working_form': working_form,
                     'document_form': document_form,
                     'payout_form': payout_form,
-                    'bank_detail_form': bank_detail_form,
                     'documents': documents,
                     'payouts': payouts,
                     'bank_details': bank_details,
                     'profile': profile,
                     'action': 'Update',
-                    'uploaded_document_types': uploaded_document_types,
+                    'uploaded_document_types': documents.values_list('document_type', flat=True),
                     'profile_picture': profile.profile_picture if profile.profile_picture else None,
                     'active_tab': 'profile'
                 }
@@ -342,11 +370,6 @@ class EmployeeEditView(UpdateView):
                 documents = Document.objects.filter(user=user)
                 payouts = Payout.objects.filter(user=user)
                 bank_details = BankDetail.objects.filter(account_holder=user)
-                # Prefill with primary bank detail if exists, otherwise first one
-                primary_bank_detail = bank_details.filter(is_primary=True).first()
-                bank_detail_to_prefill = primary_bank_detail if primary_bank_detail else bank_details.first()
-                bank_detail_form = BankDetailForm(instance=bank_detail_to_prefill) if bank_detail_to_prefill else BankDetailForm()
-                uploaded_document_types = documents.values_list('document_type', flat=True)
                 
                 context = {
                     'user_form': user_form,
@@ -354,13 +377,12 @@ class EmployeeEditView(UpdateView):
                     'working_form': working_form,
                     'document_form': document_form,
                     'payout_form': payout_form,
-                    'bank_detail_form': bank_detail_form,
                     'documents': documents,
                     'payouts': payouts,
                     'bank_details': bank_details,
                     'profile': profile,
                     'action': 'Update',
-                    'uploaded_document_types': uploaded_document_types,
+                    'uploaded_document_types': documents.values_list('document_type', flat=True),
                     'profile_picture': profile.profile_picture if profile.profile_picture else None,
                     'active_tab': 'work'
                 }
@@ -460,11 +482,6 @@ class EmployeeEditView(UpdateView):
                 documents = Document.objects.filter(user=user)
                 payouts = Payout.objects.filter(user=user)
                 bank_details = BankDetail.objects.filter(account_holder=user)
-                # Prefill with primary bank detail if exists, otherwise first one
-                primary_bank_detail = bank_details.filter(is_primary=True).first()
-                bank_detail_to_prefill = primary_bank_detail if primary_bank_detail else bank_details.first()
-                bank_detail_form = BankDetailForm(instance=bank_detail_to_prefill) if bank_detail_to_prefill else BankDetailForm()
-                uploaded_document_types = documents.values_list('document_type', flat=True)
                 
                 context = {
                     'user_form': user_form,
@@ -472,13 +489,12 @@ class EmployeeEditView(UpdateView):
                     'working_form': working_form,
                     'document_form': document_form,
                     'payout_form': payout_form,
-                    'bank_detail_form': bank_detail_form,
                     'documents': documents,
                     'payouts': payouts,
                     'bank_details': bank_details,
                     'profile': profile,
                     'action': 'Update',
-                    'uploaded_document_types': uploaded_document_types,
+                    'uploaded_document_types': documents.values_list('document_type', flat=True),
                     'profile_picture': profile.profile_picture if profile.profile_picture else None,
                     'active_tab': 'payout'
                 }
@@ -500,24 +516,71 @@ class EmployeeEditView(UpdateView):
             bank_details = BankDetail.objects.filter(account_holder=user)
             uploaded_document_types = documents.values_list('document_type', flat=True)
             
-            # Check if we're updating an existing bank detail or creating a new one
-            # Look for primary bank detail first, then first one
-            primary_bank_detail = bank_details.filter(is_primary=True).first()
-            existing_bank_detail = primary_bank_detail if primary_bank_detail else bank_details.first()
+            # Get all bank detail forms from the request
+            bank_detail_forms = []
+            index = 0
             
-            bank_detail_form = BankDetailForm(request.POST, instance=existing_bank_detail)
+            while True:
+                bank_name = request.POST.get(f'bank_name-{index}')
+                branch = request.POST.get(f'branch-{index}')
+                account_number = request.POST.get(f'account_number-{index}')
+                
+                if not bank_name or not branch or not account_number:
+                    break
+                    
+                bank_username = request.POST.get(f'bank_username-{index}', '')
+                is_primary = request.POST.get(f'is_primary-{index}') == 'on'
+                
+                # Create form data for this bank detail
+                form_data = {
+                    'bank_name': bank_name,
+                    'bank_username': bank_username,
+                    'branch': branch,
+                    'account_number': account_number,
+                    'is_primary': is_primary,
+                }
+                
+                bank_detail_form = BankDetailForm(form_data)
+                bank_detail_forms.append(bank_detail_form)
+                index += 1
             
-            if bank_detail_form.is_valid():
+            if not bank_detail_forms:
+                messages.error(request, "Please provide at least one bank detail.")
+                context = {
+                    'user_form': user_form,
+                    'profile_form': profile_form,
+                    'working_form': working_form,
+                    'document_form': document_form,
+                    'payout_form': payout_form,
+                    'documents': documents,
+                    'payouts': payouts,
+                    'bank_details': bank_details,
+                    'profile': profile,
+                    'action': 'Update',
+                    'uploaded_document_types': uploaded_document_types,
+                    'profile_picture': profile.profile_picture if profile.profile_picture else None,
+                    'active_tab': 'bank_detail'
+                }
+                return render(request, self.template_name, context)
+            
+            # Validate all forms
+            all_valid = all(form.is_valid() for form in bank_detail_forms)
+            
+            if all_valid:
                 try:
-                    bank_detail = bank_detail_form.save(commit=False)
-                    bank_detail.account_holder = user
-                    
-                    # If this is marked as primary, unmark other bank details as primary
-                    if bank_detail.is_primary:
-                        BankDetail.objects.filter(account_holder=user, is_primary=True).exclude(pk=bank_detail.pk if bank_detail.pk else 0).update(is_primary=False)
-                    
-                    bank_detail.save()
-                    messages.success(request, "Bank details updated successfully.")
+                    with transaction.atomic():
+                        # If any form has is_primary=True, unmark all existing primary bank details
+                        has_primary = any(form.cleaned_data.get('is_primary') for form in bank_detail_forms)
+                        if has_primary:
+                            BankDetail.objects.filter(account_holder=user, is_primary=True).update(is_primary=False)
+                        
+                        # Save all bank details
+                        for form in bank_detail_forms:
+                            bank_detail = form.save(commit=False)
+                            bank_detail.account_holder = user
+                            bank_detail.save()
+                        
+                        messages.success(request, "Bank details saved successfully.")
                 except Exception as e:
                     messages.error(request, f"Error saving bank details: {str(e)}")
             else:
@@ -528,7 +591,6 @@ class EmployeeEditView(UpdateView):
                     'working_form': working_form,
                     'document_form': document_form,
                     'payout_form': payout_form,
-                    'bank_detail_form': bank_detail_form,
                     'documents': documents,
                     'payouts': payouts,
                     'bank_details': bank_details,
@@ -541,18 +603,12 @@ class EmployeeEditView(UpdateView):
                 return render(request, self.template_name, context)
             
             # After successful save, redirect with context that includes existing bank details
-            # Prefill with primary bank detail if exists, otherwise first one
-            primary_bank_detail = bank_details.filter(is_primary=True).first()
-            bank_detail_to_prefill = primary_bank_detail if primary_bank_detail else bank_details.first()
-            bank_detail_form = BankDetailForm(instance=bank_detail_to_prefill) if bank_detail_to_prefill else BankDetailForm()
-            
             context = {
                 'user_form': user_form,
                 'profile_form': profile_form,
                 'working_form': working_form,
                 'document_form': document_form,
                 'payout_form': payout_form,
-                'bank_detail_form': bank_detail_form,
                 'documents': documents,
                 'payouts': payouts,
                 'bank_details': bank_details,
