@@ -81,9 +81,9 @@ class EmployeeCreateView(View):
     template_name = 'user/employee/create.html'
     success_url = reverse_lazy('user:employee_list')
 
-    calendar_type = Setup.get_calendar_type()
     def get(self, request):
-        context = get_common_context(action='Create', calendar_type=self.calendar_type)
+        calendar_type = Setup.get_calendar_type()
+        context = get_common_context(action='Create', calendar_type=calendar_type)
         return render(request, self.template_name, context)
 
     def post(self, request):
@@ -102,7 +102,8 @@ class EmployeeCreateView(View):
                     user.save()
 
                     profile = profile_form.save(commit=False)
-                    if self.calendar_type == 'bs':
+                    calendar_type = Setup.get_calendar_type()
+                    if calendar_type == 'bs':
                         dob = profile_form.cleaned_data['dob']
                         profile.dob = nepali_str_to_english(str(dob)) if dob else None
                     else:
@@ -258,8 +259,8 @@ class EmployeeEditView(UpdateView):
     template_name = 'user/employee/create.html'
     # success_url = reverse_lazy('user:employee_list')
 
-    calendar_type = Setup.get_calendar_type()
     def get(self, request, *args, **kwargs):
+        calendar_type = Setup.get_calendar_type()
         user = get_object_or_404(AuthUser, pk=kwargs['pk'])
         profile, _ = Profile.objects.get_or_create(user=user)
         working_detail, _ = WorkingDetail.objects.get_or_create(employee=user)
@@ -295,7 +296,7 @@ class EmployeeEditView(UpdateView):
             'action': 'Update',
             'uploaded_document_types': uploaded_document_types,
             'profile_picture': profile.profile_picture if profile.profile_picture else None,
-            'calendar_type': self.calendar_type,
+            'calendar_type': calendar_type,
         }
         return render(request, self.template_name, context)
 
@@ -317,7 +318,8 @@ class EmployeeEditView(UpdateView):
                         user = user_form.save()
 
                         profile = profile_form.save(commit=False)
-                        if self.calendar_type == 'bs':
+                        calendar_type = Setup.get_calendar_type()
+                        if calendar_type == 'bs':
                             dob = profile_form.cleaned_data['dob']
                             profile.dob = nepali_str_to_english(str(dob)) if dob else None
                         else:

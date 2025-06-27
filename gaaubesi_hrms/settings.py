@@ -84,7 +84,6 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'utils.context_processor.check_active_sidebar_links',
-                # 'utils.context_processor.calendar_type',
 
             ],
         },

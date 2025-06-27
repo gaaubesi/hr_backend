@@ -52,7 +52,3 @@ def check_active_sidebar_links(request):
         'payout_status': payout_status,
     }
     return context
-
-# def calendar_type(request):
-#     calendar_type = Setup.get_calendar_type()
-#     return calendar_type
