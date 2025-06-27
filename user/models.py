@@ -129,3 +129,17 @@ class Payout(models.Model):
     def __str__(self):
         return f"{self.user.username} - {self.payout_interval.name} - {self.amount}"
 
+
+class BankDetail(models.Model):
+    account_holder = models.ForeignKey(
+        AuthUser, on_delete=models.CASCADE, related_name='bank_details', blank=True)
+    bank_name = models.CharField(max_length=50)
+    bank_username = models.CharField(max_length=50, null=True)
+    branch = models.CharField(max_length=20)
+    account_number = models.CharField(max_length=50)
+    is_primary = models.BooleanField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.bank_name} - {self.account_number} ({self.account_holder.username})"
+
+    

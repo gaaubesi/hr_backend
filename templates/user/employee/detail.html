@@ -74,7 +74,7 @@
                     <div class="col-md-6">
                         <table class="table table-borderless">
                             <tr>
-                                <th style="width: 150px;">Gender:</th>
+                                <th style="width: 180px;">Gender:</th>
                                 <td>{{ profile.get_gender_display }}</td>
                             </tr>
                             <tr>
@@ -244,6 +244,95 @@
                 </tbody>
             </table>
         </div>
+    </div>
+</div>
+
+<!-- Bank Details Section -->
+<div class="card mt-4">
+    <div class="card-header bg-primary text-white fw-bold reduced-padding">
+        Bank Details
+    </div>
+    <div class="card-body">
+        {% if bank_details|length > 1 %}
+            <!-- Display in columns for multiple bank details -->
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
+                {% for bank_detail in bank_details %}
+                <div class="col">
+                    <div class="card h-100 shadow-sm border-primary">
+                        <div class="card-header bg-light">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0 text-truncate" style="max-width: 70%;">
+                                    {{ bank_detail.bank_name }}
+                                </h6>
+                                {% if bank_detail.is_primary %}
+                                    <span class="badge bg-primary">Primary</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="small">
+                                <div class="mb-2">
+                                    <strong>Branch:</strong><br>
+                                    <span class="text-muted">{{ bank_detail.branch }}</span>
+                                </div>
+                                <div class="mb-2">
+                                    <strong>Account Number:</strong><br>
+                                    <span class="text-muted">{{ bank_detail.account_number }}</span>
+                                </div>
+                                {% if bank_detail.bank_username %}
+                                <div class="mb-2">
+                                    <strong>Username:</strong><br>
+                                    <span class="text-muted">{{ bank_detail.bank_username }}</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <!-- Display in single row format for 1 bank detail -->
+            {% for bank_detail in bank_details %}
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <table class="table table-borderless">
+                        <tr>
+                            <th style="width: 180px;">Bank Name:</th>
+                            <td>
+                                {{ bank_detail.bank_name }}
+                                {% if bank_detail.is_primary %}
+                                    <span class="badge bg-primary ms-1">Primary</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Branch:</th>
+                            <td>{{ bank_detail.branch }}</td>
+                        </tr>
+                        <tr>
+                            <th>Account Number:</th>
+                            <td>{{ bank_detail.account_number }}</td>
+                        </tr>
+                        {% if bank_detail.bank_username %}
+                        <tr>
+                            <th>Username:</th>
+                            <td>{{ bank_detail.bank_username }}</td>
+                        </tr>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+            {% empty %}
+            <div class="row">
+                <div class="col-12">
+                    <div class="alert alert-info mb-0">
+                        <i class="fas fa-info-circle me-2"></i>No bank details available yet.
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% endif %}
     </div>
 </div>
     </div>
