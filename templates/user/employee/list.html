@@ -129,7 +129,15 @@
                 <td>{{ employee.profile.get_marital_status_display }}</td>
                 {% comment %} <td>{{ employee.email }}</td> {% endcomment %}
                 <td>{{ employee.working_detail.get_job_type_display }}</td>
-                <td>{{ employee.working_detail.joining_date|to_nepali_date }}</td>
+                {% if employee.working_detail.joining_date %}
+                    {% if calendar_type == 'bs' %}
+                        <td>{{ employee.working_detail.joining_date|to_nepali_date }}</td>
+                    {% else %}
+                        <td>{{ employee.working_detail.joining_date|date:"Y-m-d" }}</td>
+                    {% endif %}
+                {% else %}
+                    <td>N/A</td>
+                {% endif %}
                 <td>
                     {% if employee.pk %}    
                         <a class="btn btn-sm btn-outline-info" href="{% url 'user:employee_detail' employee.pk %}">

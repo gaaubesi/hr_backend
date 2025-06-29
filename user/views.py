@@ -71,6 +71,7 @@ class EmployeeListView(ListView):
             'current_gender': request_data.get('gender', ''),
             'current_marital_status': request_data.get('marital_status', ''),
             'current_job_type': request_data.get('job_type', ''),
+            'calendar_type': Setup.get_calendar_type(),
         })
         return context
 
@@ -82,8 +83,7 @@ class EmployeeCreateView(View):
     success_url = reverse_lazy('user:employee_list')
 
     def get(self, request):
-        calendar_type = Setup.get_calendar_type()
-        context = get_common_context(action='Create', calendar_type=calendar_type)
+        context = get_common_context(action='Create')
         return render(request, self.template_name, context)
 
     def post(self, request):
@@ -102,13 +102,6 @@ class EmployeeCreateView(View):
                     user.save()
 
                     profile = profile_form.save(commit=False)
-                    calendar_type = Setup.get_calendar_type()
-                    if calendar_type == 'bs':
-                        dob = profile_form.cleaned_data['dob']
-                        profile.dob = nepali_str_to_english(str(dob)) if dob else None
-                    else:
-                        profile.dob = profile_form.cleaned_data['dob']
-
                     profile.user = user
                     profile.profile_picture = request.FILES.get('profile-profile_picture')
                     profile.save()
@@ -260,7 +253,6 @@ class EmployeeEditView(UpdateView):
     # success_url = reverse_lazy('user:employee_list')
 
     def get(self, request, *args, **kwargs):
-        calendar_type = Setup.get_calendar_type()
         user = get_object_or_404(AuthUser, pk=kwargs['pk'])
         profile, _ = Profile.objects.get_or_create(user=user)
         working_detail, _ = WorkingDetail.objects.get_or_create(employee=user)
@@ -296,7 +288,6 @@ class EmployeeEditView(UpdateView):
             'action': 'Update',
             'uploaded_document_types': uploaded_document_types,
             'profile_picture': profile.profile_picture if profile.profile_picture else None,
-            'calendar_type': calendar_type,
         }
         return render(request, self.template_name, context)
 
@@ -318,13 +309,6 @@ class EmployeeEditView(UpdateView):
                         user = user_form.save()
 
                         profile = profile_form.save(commit=False)
-                        calendar_type = Setup.get_calendar_type()
-                        if calendar_type == 'bs':
-                            dob = profile_form.cleaned_data['dob']
-                            profile.dob = nepali_str_to_english(str(dob)) if dob else None
-                        else:
-                            profile.dob = profile_form.cleaned_data['dob']
-                            
                         profile.user = user
                         # Handle profile picture upload
                         if 'profile-profile_picture' in request.FILES:
@@ -695,6 +679,7 @@ class EmployeeDetailView(View):
         documents = Document.objects.filter(user=employee)
         payouts = Payout.objects.filter(user=employee)
         bank_details = BankDetail.objects.filter(account_holder=employee)
+        calendar_type = Setup.get_calendar_type()
         
         context = {
             'employee': employee,
@@ -703,6 +688,7 @@ class EmployeeDetailView(View):
             'documents': documents,
             'payouts': payouts,
             'bank_details': bank_details,
+            'calendar_type': calendar_type,
         }
         return render(request, self.template_name, context)
 

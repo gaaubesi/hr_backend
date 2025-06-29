@@ -1,3 +1,4 @@
+from datetime import datetime
 from django import forms
 
 from setup.models import Setup
@@ -31,10 +32,12 @@ class UserForm(forms.ModelForm):
         return email
 
 class ProfileForm(forms.ModelForm):
+    dob = forms.CharField()
+
     class Meta:
         model = Profile
         fields = ('dob', 'gender', 'marital_status', 'address', 'mobile_number', 'personal_email', 'religion', 'blood_group')
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -67,7 +70,23 @@ class ProfileForm(forms.ModelForm):
         if self.instance and self.instance.pk:
             if self.instance.dob and Setup.get_calendar_type() == 'bs':
                 self.initial['dob'] = english_to_nepali(self.instance.dob)
-        
+
+    def clean_dob(self):
+        dob = self.cleaned_data.get('dob')
+        calendar_type = Setup.get_calendar_type()
+
+        if calendar_type == 'bs':
+            if dob:
+                try:
+                    return nepali_str_to_english(dob.strip())  # Ensure correct format
+                except Exception as e:
+                    raise forms.ValidationError("Invalid Nepali date.")
+            return None
+        else:
+            try:
+                return datetime.strptime(dob, "%Y-%m-%d").date() if dob else None
+            except Exception:
+                raise forms.ValidationError("Invalid Gregorian date.")
 
     def clean_mobile_number(self):
         mobile_number = self.cleaned_data.get('mobile_number')
@@ -80,13 +99,11 @@ class ProfileForm(forms.ModelForm):
         if personal_email and Profile.objects.filter(personal_email=personal_email).exclude(pk=self.instance.pk if self.instance else None).exists():
             raise ValidationError("This personal email is already registered.")
         return personal_email
+    
 
 class WorkingDetailForm(forms.ModelForm):
     # Override joining_date as CharField to avoid early parsing
-    joining_date = forms.CharField(widget=forms.TextInput(attrs={
-        'placeholder': 'YYYY-MM-DD (BS)', 'id': 'joining_date'
-    }))
-    
+    joining_date = forms.CharField()
     class Meta:
         model = WorkingDetail
         fields = ('shift', 'job_type', 'joining_date', 'department', 'branch')
@@ -96,22 +113,39 @@ class WorkingDetailForm(forms.ModelForm):
         self.fields['job_type'].choices = [
             choice for choice in self.fields['job_type'].choices if choice[0] != 'all'
         ]
+
+        if Setup.get_calendar_type() == 'bs':
+            self.fields['joining_date'].widget = forms.TextInput(attrs={
+                'class': 'form-control nep_date',
+                'placeholder': 'YYYY-MM-DD (BS)',
+                'autocomplete': 'off'
+            })
+        else:
+            self.fields['joining_date'].widget = forms.DateInput(attrs={
+                'type': 'date',
+                'class': 'form-control'
+            })
+
         if self.instance and self.instance.pk:
-            if self.instance.joining_date:
-                self.initial['joining_date'] = english_to_nepali(self.instance.joining_date)
-
+            if self.instance.joining_date and Setup.get_calendar_type() == 'bs':
+                self.initial['joining_date'] = english_to_nepali(self.instance.joining_date)   
     
-    def clean(self):
-        cleaned_data = super().clean()
-        joining_date_str = cleaned_data.get('joining_date')
+    def clean_joining_date(self):
+        joining_date = self.cleaned_data.get('joining_date')
+        calendar_type = Setup.get_calendar_type()
 
-        # Convert to English date
-        try:
-            cleaned_data['joining_date'] = nepali_str_to_english(joining_date_str)
-        except Exception:
-            self.add_error('joining_date', "Invalid Nepali date format or non-existent date.")
-
-        return cleaned_data  
+        if calendar_type == 'bs':
+            if joining_date:
+                try:
+                    return nepali_str_to_english(joining_date.strip())
+                except Exception as e:
+                    raise forms.ValidationError("Invalid Nepali date.")
+            return None
+        else:
+            try:
+                return datetime.strptime(joining_date, "%Y-%m-%d").date() if joining_date else None
+            except Exception:
+                raise forms.ValidationError("Invalid Gregorian date.")
 
         
 class DocumentForm(forms.ModelForm):

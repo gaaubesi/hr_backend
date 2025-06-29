@@ -80,7 +80,11 @@
                             <tr>
                                 <th>Date of Birth:</th>
                                 {% if profile.dob %}
-                                    <td>{{ profile.dob|to_nepali_date }}</td>
+                                    {% if calendar_type == 'bs' %}
+                                        <td>{{ profile.dob|to_nepali_date }}</td>
+                                    {% else %}
+                                        <td>{{ profile.dob|date:"Y-m-d" }}</td>
+                                    {% endif %}
                                 {% else %}
                                     <td>N/A</td>
                                 {% endif %}
@@ -119,9 +123,13 @@
                             <tr>
                                 <th>Joining Date:</th>
                                 {% if working_detail.joining_date %}
-                                    <td>{{ working_detail.joining_date|to_nepali_date }}</td>
+                                    {% if calendar_type == 'bs' %}
+                                        <td>{{ working_detail.joining_date|to_nepali_date }}</td>
+                                    {% else %}
+                                        <td>{{ working_detail.joining_date|date:"Y-m-d" }}</td>
+                                    {% endif %}
                                 {% else %}
-                                    <td></td>
+                                    <td>N/A</td>
                                 {% endif %}
                             </tr>
                         </table>
