@@ -129,6 +129,9 @@
                 <li class="nav-item" role="presentation">
                     <button class="nav-link {% if active_tab == 'payout' %}active{% endif %}" id="payout-tab" data-bs-toggle="tab" data-bs-target="#payout" type="button">Payout</button>
                 </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link {% if active_tab == 'bank_detail' %}active{% endif %}" id="bank-detail-tab" data-bs-toggle="tab" data-bs-target="#bank-detail" type="button">Bank Details</button>
+                </li>
             </ul>
 
             <div class="tab-content" id="employeeTabsContent">
@@ -408,6 +411,116 @@
                         </div>
                     </form>
                 </div>
+
+                <!-- Bank Details Tab -->
+                <div class="tab-pane fade {% if active_tab == 'bank_detail' %}show active{% endif %}" id="bank-detail" role="tabpanel">
+                    <form method="POST" id="bank-detail-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="form_section" value="bank_detail">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div id="bank-detail-forms">
+                                    <div class="bank-detail-form-item mb-3">
+                                        <div class="row g-3">
+                                            <div class="col-md-3 pe-2">
+                                                <label for="id_bank_name-0">Bank Name <span class="asteriskField">*</span></label>
+                                                <input type="text" name="bank_name-0" id="id_bank_name-0" class="form-control" placeholder="Enter bank name" required>
+                                            </div>
+                                            <div class="col-md-3 px-2">
+                                                <label for="id_bank_username-0">Bank Username <span class="asteriskField">*</span></label>
+                                                <input type="text" name="bank_username-0" id="id_bank_username-0" class="form-control" placeholder="Enter bank username" required>
+                                            </div>
+                                            <div class="col-md-3 px-2">
+                                                <label for="id_branch-0">Branch <span class="asteriskField">*</span></label>
+                                                <input type="text" name="branch-0" id="id_branch-0" class="form-control" placeholder="Enter branch name" required>
+                                            </div>
+                                            <div class="col-md-3 ps-2">
+                                                <label for="id_account_number-0">Account Number <span class="asteriskField">*</span></label>
+                                                <input type="text" name="account_number-0" id="id_account_number-0" class="form-control" placeholder="Enter account number" required>
+                                            </div>
+                                            <div class="col-md-12">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="is_primary-0" id="id_is_primary-0">
+                                                    <label class="form-check-label" for="id_is_primary-0">
+                                                        Set as Primary
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <button type="button" class="btn btn-info" id="add-more-bank-detail">
+                                        <i class="fas fa-plus"></i> Add More
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-center mt-3">
+                            <button type="submit" class="btn btn-success">{{ action }}</button>
+                            <a href="{% url 'user:employee_list' %}" class="btn btn-warning">Cancel</a>
+                        </div>
+                    </form>
+
+                    <!-- Display existing bank details -->
+                    <div class="mt-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0">Bank Details</h5>
+                        </div>
+                        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
+                            {% for bank_detail in bank_details %}
+                            <div class="col">
+                                <div class="card h-100 shadow-sm">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <h6 class="card-title mb-0 text-truncate" style="max-width: 70%;">
+                                                {{ bank_detail.bank_name }}
+                                                {% if bank_detail.is_primary %}
+                                                    <span class="badge bg-primary ms-1">Primary</span>
+                                                {% endif %}
+                                            </h6>
+                                        </div>
+                                        <div class="small text-muted mb-2">
+                                            <div><strong>Branch:</strong> {{ bank_detail.branch }}</div>
+                                            <div><strong>Account:</strong> {{ bank_detail.account_number }}</div>
+                                            {% if bank_detail.bank_username %}
+                                                <div><strong>Username:</strong> {{ bank_detail.bank_username }}</div>
+                                            {% endif %}
+                                        </div>
+
+                                        <div class="d-flex gap-2 mt-3">
+                                            <button type="button" class="btn btn-outline-warning btn-sm edit-bank-detail-btn flex-grow-1"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#editBankDetailModal{{ bank_detail.id }}"
+                                                data-bank-detail-id="{{ bank_detail.id }}"
+                                                data-bank-name="{{ bank_detail.bank_name }}"
+                                                data-bank-username="{{ bank_detail.bank_username|default:'' }}"
+                                                data-branch="{{ bank_detail.branch }}"
+                                                data-account-number="{{ bank_detail.account_number }}"
+                                                data-is-primary="{% if bank_detail.is_primary %}true{% else %}false{% endif %}">
+                                                <i class="fas fa-edit me-1"></i> Edit
+                                            </button>
+                                            <button type="button" class="btn btn-outline-danger btn-sm delete-btn"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#confirmationModal"
+                                                data-url="{% url 'user:delete_bank_detail' bank_detail.id %}"
+                                                data-title="Delete Bank Detail">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% empty %}
+                            <div class="col-12">
+                                <div class="alert alert-info mb-0">
+                                    <i class="fas fa-info-circle me-2"></i>No bank details added yet.
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -431,6 +544,53 @@
         </div>
     </div>
 </div>
+
+<!-- Bank Detail Edit Modals -->
+{% for bank_detail in bank_details %}
+<div class="modal fade" id="editBankDetailModal{{ bank_detail.id }}" tabindex="-1" role="dialog" aria-labelledby="editBankDetailLabel{{ bank_detail.id }}" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header text-white">
+                <h5 class="modal-title" id="editBankDetailLabel{{ bank_detail.id }}">Edit Bank Detail</h5>
+                <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{% url 'user:edit_bank_detail' bank_detail.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="edit_bank_name_{{ bank_detail.id }}" class="form-label">Bank Name</label>
+                        <input type="text" class="form-control" id="edit_bank_name_{{ bank_detail.id }}" name="bank_name" value="{{ bank_detail.bank_name }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_bank_username_{{ bank_detail.id }}" class="form-label">Bank Username</label>
+                        <input type="text" class="form-control" id="edit_bank_username_{{ bank_detail.id }}" name="bank_username" value="{{ bank_detail.bank_username|default:'' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_branch_{{ bank_detail.id }}" class="form-label">Branch</label>
+                        <input type="text" class="form-control" id="edit_branch_{{ bank_detail.id }}" name="branch" value="{{ bank_detail.branch }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_account_number_{{ bank_detail.id }}" class="form-label">Account Number</label>
+                        <input type="text" class="form-control" id="edit_account_number_{{ bank_detail.id }}" name="account_number" value="{{ bank_detail.account_number }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="edit_is_primary_{{ bank_detail.id }}" name="is_primary" {% if bank_detail.is_primary %}checked{% endif %}>
+                            <label class="form-check-label" for="edit_is_primary_{{ bank_detail.id }}">
+                                Set as Primary
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Update</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
 {% endblock content %}
 
 {% block scripts %}
@@ -726,6 +886,137 @@
                 }
             });
         }
+
+        // Sync file selection from original input to hidden one
+        fileInput.addEventListener('change', function () {
+            clonedInput.files = fileInput.files;
+        });
+
+        // Bank detail form handling
+        const bankDetailForm = document.getElementById('bank-detail-form');
+        if (bankDetailForm) {
+            bankDetailForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Collect all form data
+                const formData = new FormData();
+                formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+                formData.append('form_section', 'bank_detail');
+                
+                // Get all bank detail forms
+                const bankDetailFormItems = document.querySelectorAll('.bank-detail-form-item');
+                let hasValidData = false;
+                
+                bankDetailFormItems.forEach((formItem, index) => {
+                    const bankName = formItem.querySelector('input[name^="bank_name-"]').value.trim();
+                    const branch = formItem.querySelector('input[name^="branch-"]').value.trim();
+                    const accountNumber = formItem.querySelector('input[name^="account_number-"]').value.trim();
+                    const bankUsername = formItem.querySelector('input[name^="bank_username-"]').value.trim();
+                    const isPrimary = formItem.querySelector('input[name^="is_primary-"]').checked;
+                    
+                    // Only include if at least required fields are filled
+                    if (bankName && branch && accountNumber) {
+                        hasValidData = true;
+                        formData.append(`bank_name-${index}`, bankName);
+                        formData.append(`branch-${index}`, branch);
+                        formData.append(`account_number-${index}`, accountNumber);
+                        formData.append(`bank_username-${index}`, bankUsername);
+                        formData.append(`is_primary-${index}`, isPrimary);
+                    }
+                });
+                
+                if (!hasValidData) {
+                    alert('Please fill in at least one bank detail with required fields (Bank Name, Branch, Account Number).');
+                    return;
+                }
+                
+                // Check if any form has primary checked
+                const primaryChecked = document.querySelector('input[name^="is_primary-"]:checked');
+                if (primaryChecked) {
+                    // Show confirmation dialog for primary account
+                    if (!confirm('Setting this as primary will unmark other bank details as primary. Continue?')) {
+                        return;
+                    }
+                }
+                
+                // Submit the form
+                fetch(window.location.href, {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (response.ok) {
+                        window.location.reload();
+                    } else {
+                        throw new Error('Network response was not ok');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while saving bank details.');
+                });
+            });
+        }
+
+        // Bank detail form handling with dynamic forms
+        const addMoreBankDetailBtn = document.getElementById('add-more-bank-detail');
+        const bankDetailForms = document.getElementById('bank-detail-forms');
+        let bankDetailFormCount = 1;
+
+        if (addMoreBankDetailBtn) {
+            addMoreBankDetailBtn.addEventListener('click', function() {
+                bankDetailFormCount++;
+                const newForm = document.querySelector('.bank-detail-form-item').cloneNode(true);
+
+                // Update IDs and names to be unique
+                const inputs = newForm.querySelectorAll('input, label');
+                inputs.forEach(input => {
+                    if (input.id) input.id = input.id.replace('-0', `-${bankDetailFormCount}`);
+                    if (input.name) input.name = input.name.replace('-0', `-${bankDetailFormCount}`);
+                    if (input.htmlFor) input.htmlFor = input.htmlFor.replace('-0', `-${bankDetailFormCount}`);
+                });
+
+                // Clear values
+                newForm.querySelectorAll('input[type="text"]').forEach(input => input.value = '');
+                newForm.querySelectorAll('input[type="checkbox"]').forEach(input => input.checked = false);
+
+                // Add remove button if not the first form
+                if (bankDetailFormCount > 1) {
+                    const removeBtn = document.createElement('button');
+                    removeBtn.type = 'button';
+                    removeBtn.className = 'btn btn-danger btn-sm mt-2';
+                    removeBtn.innerHTML = '<i class="fas fa-trash"></i> Remove';
+                    removeBtn.onclick = function() {
+                        newForm.remove();
+                        bankDetailFormCount--;
+                    };
+                    newForm.appendChild(removeBtn);
+                }
+
+                bankDetailForms.appendChild(newForm);
+            });
+        }
+
+        // Handle bank detail edit modal data population
+        document.querySelectorAll('.edit-bank-detail-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                const bankDetailId = this.getAttribute('data-bank-detail-id');
+                const bankName = this.getAttribute('data-bank-name');
+                const bankUsername = this.getAttribute('data-bank-username');
+                const branch = this.getAttribute('data-branch');
+                const accountNumber = this.getAttribute('data-account-number');
+                const isPrimary = this.getAttribute('data-is-primary') === 'true';
+                
+                const modal = document.getElementById(`editBankDetailModal${bankDetailId}`);
+                if (modal) {
+                    modal.querySelector('input[name="bank_name"]').value = bankName;
+                    modal.querySelector('input[name="bank_username"]').value = bankUsername;
+                    modal.querySelector('input[name="branch"]').value = branch;
+                    modal.querySelector('input[name="account_number"]').value = accountNumber;
+                    modal.querySelector('input[name="is_primary"]').checked = isPrimary;
+                }
+            });
+        });
     });
 
     window.onload = function () {
@@ -733,6 +1024,8 @@
         if (joining_date) {
             joining_date.nepaliDatePicker();
         }
+
+        $('.nep_date').nepaliDatePicker()
 
         // Initialize Nepali date picker for all issue date fields
         document.querySelectorAll('input[id^="id_issue_date-"]').forEach(function(element) {
@@ -755,3 +1048,4 @@
     }
 </script>
 {% endblock %}
+

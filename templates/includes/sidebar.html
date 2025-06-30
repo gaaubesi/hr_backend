@@ -159,8 +159,8 @@
                     </a>
                 </li>
 
-                <li class="menu-item mb-2 {% if current_url == 'department:department_list'%}active{% endif %}">
-                    <a href="{% url 'setup:setup_list' %}" class="menu-link {% if current_url == 'setup:setup_list' %}bg-primary text-white fw-bold{% else %}text-white{% endif %}">
+                <li class="menu-item mb-2 {% if current_url == 'setup:setup_form'%}active{% endif %}">
+                    <a href="{% url 'setup:setup_form' %}" class="menu-link {% if current_url == 'setup:setup_form' %}bg-primary text-white fw-bold{% else %}text-white{% endif %}">
                         <i class="menu-icon fas fa-cog fs-5 me-2 text-white"></i>
                         <span>Setup</span>
                     </a>

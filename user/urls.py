@@ -1,5 +1,5 @@
 from django.urls import include, path
-from .views import EmployeeListView, EmployeeCreateView, EmployeeEditView, EmployeeDeleteView, EmployeeDetailView, DeleteDocumentView, DeletePayoutView, EditDocumentView
+from .views import EmployeeListView, EmployeeCreateView, EmployeeEditView, EmployeeDeleteView, EmployeeDetailView, DeleteDocumentView, DeletePayoutView, EditDocumentView, DeleteBankDetailView, EditBankDetailView
 
 app_name = 'user'
 
@@ -13,4 +13,6 @@ urlpatterns = [
     path('document/<int:pk>/delete/', DeleteDocumentView.as_view(), name='delete_document'),
     path('document/<int:pk>/edit/', EditDocumentView.as_view(), name='edit_document'),
     path('payout/<int:pk>/delete/', DeletePayoutView.as_view(), name='delete_payout'),
+    path('bank-detail/<int:pk>/delete/', DeleteBankDetailView.as_view(), name='delete_bank_detail'),
+    path('bank-detail/<int:pk>/edit/', EditBankDetailView.as_view(), name='edit_bank_detail'),
 ]

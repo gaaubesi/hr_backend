@@ -21,6 +21,11 @@ class Setup(models.Model):
     created_on = models.DateTimeField(auto_now_add=True)
     updated_on = models.DateTimeField(auto_now=True)
 
+    @classmethod
+    def get_calendar_type(cls):
+        setup = cls.objects.first()
+        return setup.calendar_type if setup else 'bs'
+
     def __str__(self):
         return f"{self.get_calendar_type_display()} - {self.shift_threshold} minutes"
 
