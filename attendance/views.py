@@ -15,6 +15,7 @@ from department.models import Department
 from fiscal_year.models import FiscalYear
 from leave.models import Leave
 from roster.models import Roster, RosterDetail, Shift
+from setup.models import Setup
 from user.models import AuthUser
 from utils.date_converter import english_to_nepali
 from utils.enums import NepaliMonthList 
@@ -198,7 +199,7 @@ class AttendanceRequestListView(ListView):
         context['request_status_choices'] = RequestStatus.choices
         # context['employees'] = self.request.user.__class__.objects.all()  # Get all users
         context['employees'] = AuthUser.get_active_users()
-
+        context['calendar_type'] = Setup.get_calendar_type()
         
         # Add current filter values to context
         if self.request.method == 'POST':
