@@ -4,6 +4,7 @@ from datetime import timedelta
 from branch.models import Branch
 from department.models import Department
 from fiscal_year.models import FiscalYear
+from setup.models import Setup
 from utils.date_converter import english_to_nepali, nepali_str_to_english
 from .models import EmployeeLeave, Leave, LeaveType
 from django.core.exceptions import ValidationError
@@ -61,12 +62,8 @@ class LeaveTypeForm(forms.ModelForm):
 
 #Leave
 class LeaveForm(forms.ModelForm):
-    start_date = forms.CharField(widget=forms.TextInput(attrs={
-        'placeholder': 'YYYY-MM-DD (BS)', 'class': 'nep_date'
-    }))
-    end_date = forms.CharField(widget=forms.TextInput(attrs={
-        'placeholder': 'YYYY-MM-DD (BS)', 'class': 'nep_date'
-    }))
+    start_date = forms.CharField()
+    end_date = forms.CharField()
     class Meta:
         model = Leave
         fields = (
@@ -90,12 +87,35 @@ class LeaveForm(forms.ModelForm):
 
             self.fields['leave_type'].queryset = LeaveType.objects.filter(id__in=assigned_leave_type_ids)
 
+        if Setup.get_calendar_type() == 'bs':
+            self.fields['start_date'].widget = forms.TextInput(attrs={
+                'class': 'form-control nep_date',
+                'placeholder': 'YYYY-MM-DD (BS)',
+                'autocomplete': 'off'
+            })
+            self.fields['end_date'].widget = forms.TextInput(attrs={
+                'class': 'form-control nep_date',
+                'placeholder': 'YYYY-MM-DD (BS)',
+                'autocomplete': 'off'
+            })
+        else:
+            self.fields['start_date'].widget = forms.DateInput(attrs={
+                'type': 'date',
+                'class': 'form-control'
+            })
+            self.fields['end_date'].widget = forms.DateInput(attrs={
+                'type': 'date',
+                'class': 'form-control'
+            })
+
         #Convert instance English dates to Nepali for display in the form
         if self.instance and self.instance.pk:
-            if self.instance.start_date:
-                self.initial['start_date'] = english_to_nepali(self.instance.start_date)
-            if self.instance.end_date:
-                self.initial['end_date'] = english_to_nepali(self.instance.end_date)
+            if Setup.get_calendar_type() == 'bs':
+                if self.instance.start_date:
+                    self.initial['start_date'] = english_to_nepali(self.instance.start_date)
+
+                if self.instance.end_date:
+                    self.initial['end_date'] = english_to_nepali(self.instance.end_date)
 
     def clean(self):
         cleaned_data = super().clean()

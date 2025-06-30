@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load nepali_date %}
 
 {% block title %}
     Request List
@@ -73,7 +74,15 @@
                 <td>{{ forloop.counter }}</td>
                 <td>{{ request.employee.full_name }}</td>
                 <td>{{ request.get_type_display }}</td>
-                <td>{{ request.date }}</td>
+                {% if request.date %}
+                    {% if calendar_type == 'bs' %}
+                        <td>{{ request.date|to_nepali_date }}</td>
+                    {% else %}
+                        <td>{{ request.date|date:"M d, Y" }}</td>
+                    {% endif %}
+                {% else %}
+                    <td>N/A</td>
+                {% endif %}
                 <td>{{ request.time }}</td>
                 <td>
                     <span class ="badge

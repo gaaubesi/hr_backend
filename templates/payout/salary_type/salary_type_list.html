@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% comment %} {% load nepali_date %} {% endcomment %}
 
 {% block title %}
     Salary Type List
@@ -59,7 +60,15 @@
             <tr>
                 <td>{{ forloop.counter }}</td>
                 <td>{{ salary_type.name }}</td>
-                <td>{{ salary_type.created_on|date:"M d, Y" }}</td>
+                {% comment %} {% if salary_type.created_on %}
+                    {% if calendar_type == 'bs' %}
+                        <td>{{ salary_type.created_on|to_nepali_date }}</td>
+                    {% else %} {% endcomment %}
+                        <td>{{ salary_type.created_on|date:"M d, Y" }}</td>
+                    {% comment %} {% endif %}
+                {% else %}
+                    <td>N/A</td>
+                {% endif %} {% endcomment %}
                 <td>
                     <a class="btn btn-sm btn-outline-primary" href="{% url 'payout:salary_type_edit' salary_type.pk %}">
                         <i class="fas fa-edit me-1"></i> Edit

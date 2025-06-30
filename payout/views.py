@@ -7,6 +7,7 @@ from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 
 from payout.forms import SalaryReleaseForm, SalaryTypeForm, PayoutIntervalForm
+# from setup.models import Setup
 from user.models import AuthUser
 
 from .models import SalaryRelease, SalaryType, PayoutInterval
@@ -38,6 +39,8 @@ class SalaryTypeListView(LoginRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
         context['all_salary_types'] = SalaryType.objects.all().order_by('name')
         context['name'] = self.request.session.get('salary_type_name', '')
+        # context['calendar_type'] = Setup.get_calendar_type()
+
         return context
 
     def post(self, request, *args, **kwargs):

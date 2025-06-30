@@ -133,7 +133,7 @@
                     {% if calendar_type == 'bs' %}
                         <td>{{ employee.working_detail.joining_date|to_nepali_date }}</td>
                     {% else %}
-                        <td>{{ employee.working_detail.joining_date|date:"Y-m-d" }}</td>
+                        <td>{{ employee.working_detail.joining_date|date:"M d, Y" }}</td>
                     {% endif %}
                 {% else %}
                     <td>N/A</td>

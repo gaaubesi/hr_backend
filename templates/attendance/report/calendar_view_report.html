@@ -45,19 +45,7 @@
     </div>
     <div class="card-body mt-3">
         <form method="get" class="row g-3">
-            <div class="col-md-3">
-                <label class="form-label">Month <span class="asteriskField">*</span></label>
-                <select name="month" class="form-select" required>
-                    <option value="">Select Month</option>
-                    {% for value, label in nepali_months %}
-                        <option value="{{ value }}" {% if selected_month == value %}selected{% endif %}>
-                            {{ label }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <div class="col-md-3">
+             <div class="col-md-3">
                 <label class="form-label">Fiscal Year</label>
                 <select class="select2 form-control" id="fiscal_year" name="fiscal_year" style="width: 250px;">
                     <!-- <option value="">All</option> -->
@@ -65,6 +53,18 @@
                         <option value="{{ year.id }}" 
                             {% if fiscal_year == year.id %}selected{% endif %}>
                             {{ year.fiscal_year }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="col-md-3">
+                <label class="form-label">Month <span class="asteriskField">*</span></label>
+                <select name="month" class="form-select" required>
+                    <option value="">Select Month</option>
+                    {% for value, label in nepali_months %}
+                        <option value="{{ value }}" {% if selected_month == value %}selected{% endif %}>
+                            {{ label }}
                         </option>
                     {% endfor %}
                 </select>

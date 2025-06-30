@@ -36,6 +36,7 @@ class RequestType(models.TextChoices):
     MISSED_CHECKOUT = 'missed_checkout', 'Missed Checkout'
     LATE_ARRIVAL_REQUEST = 'late_arrival_request', 'Late Arrival Request'
     EARLY_DEPARTURE_REQUEST = 'early_departure_request', 'Early Departure Request'
+    
 class Request(models.Model):
     employee = models.ForeignKey('user.AuthUser', on_delete=models.CASCADE, related_name='attendance_requests')
     type = models.CharField(max_length=50, choices=RequestType.choices)
