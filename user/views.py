@@ -5,7 +5,6 @@ from django.views.generic import ListView, UpdateView
 from django.urls import reverse_lazy, reverse
 from django.contrib import messages
 from django.db import transaction
-from django.forms import modelformset_factory
 from django.conf import settings
 
 from leave.models import EmployeeLeave, LeaveType

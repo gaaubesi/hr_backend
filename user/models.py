@@ -137,7 +137,7 @@ class BankDetail(models.Model):
     bank_name = models.CharField(max_length=50)
     bank_username = models.CharField(max_length=50, null=True)
     branch = models.CharField(max_length=20)
-    account_number = models.CharField(max_length=50)
+    account_number = models.BigIntegerField()
     is_primary = models.BooleanField(null=True, blank=True)
 
     def __str__(self):
