@@ -68,8 +68,27 @@
                     <td>{{ forloop.counter }}</td>
                     <td>{{ leave.employee.full_name }}</td>
                     <td>{{ leave.leave_type.name }}</td>
-                    <td>{{ leave.start_date|to_nepali_date }}</td>
-                    <td>{{ leave.end_date|to_nepali_date }}</td>
+
+                    {% if leave.start_date %}
+                        {% if calendar_type == 'bs' %}
+                            <td>{{ leave.start_date|to_nepali_date }}</td>
+                        {% else %}
+                            <td>{{ leave.start_date|date:"M d, Y" }}</td>
+                        {% endif %}
+                    {% else %}
+                        <td>N/A</td>
+                    {% endif %}
+
+                    {% if leave.end_date %}
+                        {% if calendar_type == 'bs' %}
+                            <td>{{ leave.end_date|to_nepali_date }}</td>
+                        {% else %}
+                            <td>{{ leave.end_date|date:"M d, Y" }}</td>
+                        {% endif %}
+                    {% else %}
+                        <td>N/A</td>
+                    {% endif %}
+                    
                     <td>{{ leave.no_of_days}}</td>
                     <td>{{ leave.created_on|date:"d M Y" }}</td>
                     <td>

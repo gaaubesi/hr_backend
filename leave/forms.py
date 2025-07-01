@@ -74,7 +74,7 @@ class LeaveForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
-        self.user = kwargs.pop('user', None)  # Get user from kwargs
+        self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         self.fields['leave_type'].empty_label = "Select Leave Type"
 
@@ -108,7 +108,7 @@ class LeaveForm(forms.ModelForm):
                 'class': 'form-control'
             })
 
-        #Convert instance English dates to Nepali for display in the form
+        #Convert instance English dates to Nepali for display in the edit form
         if self.instance and self.instance.pk:
             if Setup.get_calendar_type() == 'bs':
                 if self.instance.start_date:
@@ -121,19 +121,31 @@ class LeaveForm(forms.ModelForm):
         cleaned_data = super().clean()
         leave_type = cleaned_data.get('leave_type')
 
-        start_date_nep_str = cleaned_data.get('start_date')
-        end_date_nep_str = cleaned_data.get('end_date')
+        cleaned_data['start_date'] = cleaned_data.get('start_date')
+        cleaned_data['end_date'] = cleaned_data.get('end_date')
 
-         # Convert to English date
-        try:
-            cleaned_data['start_date'] = nepali_str_to_english(start_date_nep_str)
-        except Exception:
-            self.add_error('start_date', "Invalid Nepali date format or non-existent date.")
+        if Setup.get_calendar_type() == 'bs':
+            try:
+                cleaned_data['start_date'] = nepali_str_to_english(cleaned_data['start_date'])
+            except Exception:
+                self.add_error('start_date', "Invalid Nepali date format or non-existent date.")
 
-        try:
-            cleaned_data['end_date'] = nepali_str_to_english(end_date_nep_str)
-        except Exception:
-            self.add_error('end_date', "Invalid Nepali date format or non-existent date.")
+            try:
+                cleaned_data['end_date'] = nepali_str_to_english(cleaned_data['end_date'])
+            except Exception:
+                self.add_error('end_date', "Invalid Nepali date format or non-existent date.")
+        else:
+            try:
+                cleaned_data['start_date'] = datetime.datetime.strptime(cleaned_data['start_date'], "%Y-%m-%d").date()
+            except Exception:
+                self.add_error('start_date', "Invalid date format.")
+
+            try:
+                cleaned_data['end_date'] = datetime.datetime.strptime(cleaned_data['end_date'], "%Y-%m-%d").date()
+            except Exception:
+                self.add_error('end_date', "Invalid date format.")
+
+
 
         # Check if start date is greater than end date
         if cleaned_data['end_date'] < cleaned_data['start_date']:
@@ -199,19 +211,21 @@ class LeaveForm(forms.ModelForm):
 
                 error_messages = []
 
+                calendar_type = Setup.get_calendar_type()
                 if roster_conflict_dates:
                     formatted_roster_dates = ', '.join([
-                        english_to_nepali(date).strftime('%Y-%m-%d')
+                        english_to_nepali(date).strftime('%Y-%m-%d') if calendar_type == 'bs' else date.strftime('%Y-%m-%d')
                         for date in sorted(set(roster_conflict_dates))
                     ])
                     error_messages.append(f"Roster Leave is on: {formatted_roster_dates}.")
 
                 if general_conflict_dates:
                     formatted_general_dates = ', '.join([
-                        english_to_nepali(date).strftime('%Y-%m-%d')
+                        english_to_nepali(date).strftime('%Y-%m-%d') if calendar_type == 'bs' else date.strftime('%Y-%m-%d')
                         for date in sorted(set(general_conflict_dates))
                     ])
                     error_messages.append(f"You have already taken leave on: {formatted_general_dates}.")
+
 
                 if error_messages:
                     raise ValidationError('\n'.join(error_messages))
