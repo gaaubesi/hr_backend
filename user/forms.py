@@ -36,7 +36,7 @@ class ProfileForm(forms.ModelForm):
 
     class Meta:
         model = Profile
-        fields = ('dob', 'gender', 'marital_status', 'address', 'mobile_number', 'personal_email', 'religion', 'blood_group')
+        fields = ('dob', 'gender', 'marital_status', 'address', 'mobile_number', 'secondary_number', 'personal_email', 'religion', 'blood_group')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
