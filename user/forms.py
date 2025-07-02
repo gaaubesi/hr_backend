@@ -157,16 +157,6 @@ class DocumentForm(forms.ModelForm):
     class Meta:
         model = Document
         fields = ['document_type', 'document_file', 'document_number', 'issue_body', 'issue_date']
-        widgets = {
-            'document_number': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Enter doc number'
-            }),
-            'issue_body': forms.Select(attrs={
-                'class': 'form-control select2',
-                'data-placeholder': 'Select Issuing Authority'
-            }),
-        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -196,13 +186,7 @@ class BankDetailForm(forms.ModelForm):
     class Meta:
         model = BankDetail
         fields = ['bank_name', 'bank_username', 'branch', 'account_number', 'is_primary']
-        widgets = {
-            'bank_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter bank name'}),
-            'bank_username': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter bank username'}),
-            'account_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter account number'}),
-            'branch': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter branch name'}),
-            'is_primary': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-        }
+        
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

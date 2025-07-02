@@ -436,7 +436,7 @@
                                             </div>
                                             <div class="col-md-3 ps-2">
                                                 <label for="id_account_number-0">Account Number <span class="asteriskField">*</span></label>
-                                                <input type="text" name="account_number-0" id="id_account_number-0" class="form-control" placeholder="Enter account number" required>
+                                                <input type="number" name="account_number-0" id="id_account_number-0" class="form-control" placeholder="Enter account number" required>
                                             </div>
                                             <div class="col-md-12">
                                                 <div class="form-check">
@@ -444,6 +444,10 @@
                                                     <label class="form-check-label" for="id_is_primary-0">
                                                         Set as Primary
                                                     </label>
+                                                </div>
+                                                <div class="alert alert-warning mt-2 primary-create-warning" style="display: none;">
+                                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                                    Marking this as primary will unmark other bank details as primary.
                                                 </div>
                                             </div>
                                         </div>
@@ -571,7 +575,7 @@
                     </div>
                     <div class="mb-3">
                         <label for="edit_account_number_{{ bank_detail.id }}" class="form-label">Account Number</label>
-                        <input type="text" class="form-control" id="edit_account_number_{{ bank_detail.id }}" name="account_number" value="{{ bank_detail.account_number }}" required>
+                        <input type="number" class="form-control" id="edit_account_number_{{ bank_detail.id }}" name="account_number" value="{{ bank_detail.account_number }}" required>
                     </div>
                     <div class="mb-3">
                         <div class="form-check">
@@ -579,6 +583,10 @@
                             <label class="form-check-label" for="edit_is_primary_{{ bank_detail.id }}">
                                 Set as Primary
                             </label>
+                        </div>
+                        <div id="primary-validation-{{ bank_detail.id }}" class="alert alert-warning mt-2" style="display: none;">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Another bank detail is already set as primary. Setting this as primary will unmark the other one.
                         </div>
                     </div>
                 </div>
@@ -789,15 +797,12 @@
                 });
 
                 // Clear values
-                // Clear all text inputs (including issue date)
                 newForm.querySelectorAll('input[type="text"]').forEach(input => input.value = '');
-                // Clear all file inputs
                 newForm.querySelectorAll('input[type="file"]').forEach(input => input.value = '');
-                // Reset selects
                 newForm.querySelectorAll('select').forEach(select => {
                     select.selectedIndex = 0;
                     updateDocumentTypeOptions(select);
-                });
+                });s
 
                 // Remove any select2 containers that may have been cloned
                 newForm.querySelectorAll('.select2-container').forEach(el => el.remove());
@@ -888,11 +893,142 @@
         }
 
         // Sync file selection from original input to hidden one
-        fileInput.addEventListener('change', function () {
-            clonedInput.files = fileInput.files;
+        const fileInput = document.getElementById('id_profile_profile_picture');
+        const profileForm = document.getElementById('profile-form');
+        if (fileInput && profileForm) {
+            // Clone the input to preserve event listeners and UI
+            const clonedInput = fileInput.cloneNode(true);
+            clonedInput.style.display = 'none';  // hide it in form
+            profileForm.appendChild(clonedInput);
+
+            // Sync file selection from original input to hidden one
+            fileInput.addEventListener('change', function () {
+                clonedInput.files = fileInput.files;
+            });
+        }
+
+        // Bank detail form handling with dynamic forms
+        const addMoreBankDetailBtn = document.getElementById('add-more-bank-detail');
+        const bankDetailForms = document.getElementById('bank-detail-forms');
+        let bankDetailFormCount = 1;
+
+        // Simple function to handle primary checkbox changes
+        function handlePrimaryCheckboxChange(changedCheckbox) {
+            const allPrimaryCheckboxes = document.querySelectorAll('input[name^="is_primary-"]');
+            
+            // Check if there are existing primary bank details
+            const existingPrimaryBankDetails = document.querySelectorAll('.card-body .badge.bg-primary');
+            const hasOtherPrimary = existingPrimaryBankDetails.length > 0;
+            
+            // Find the alert div for this checkbox
+            const alertDiv = changedCheckbox.closest('.col-md-12').querySelector('.primary-create-warning');
+            
+            // If setting primary and there's already a primary bank detail, show alert
+            if (changedCheckbox.checked && hasOtherPrimary) {
+                if (alertDiv) alertDiv.style.display = 'block';
+            } else {
+                if (alertDiv) alertDiv.style.display = 'none';
+            }
+            
+            // Uncheck all other checkboxes in the form
+            allPrimaryCheckboxes.forEach(checkbox => {
+                if (checkbox !== changedCheckbox) {
+                    checkbox.checked = false;
+                    // Hide their alerts too
+                    const otherAlertDiv = checkbox.closest('.col-md-12').querySelector('.primary-create-warning');
+                    if (otherAlertDiv) otherAlertDiv.style.display = 'none';
+                }
+            });
+        }
+
+        // Add event listeners to primary checkboxes
+        function addPrimaryCheckboxListeners() {
+            document.querySelectorAll('input[name^="is_primary-"]').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    handlePrimaryCheckboxChange(this);
+                });
+            });
+        }
+
+        if (addMoreBankDetailBtn) {
+            addMoreBankDetailBtn.addEventListener('click', function() {
+                bankDetailFormCount++;
+                const newForm = document.querySelector('.bank-detail-form-item').cloneNode(true);
+
+                // Update IDs and names to be unique
+                const inputs = newForm.querySelectorAll('input, label');
+                inputs.forEach(input => {
+                    if (input.id) input.id = input.id.replace('-0', `-${bankDetailFormCount}`);
+                    if (input.name) input.name = input.name.replace('-0', `-${bankDetailFormCount}`);
+                    if (input.htmlFor) input.htmlFor = input.htmlFor.replace('-0', `-${bankDetailFormCount}`);
+                });
+
+                // Clear values
+                newForm.querySelectorAll('input[type="text"]').forEach(input => input.value = '');
+                newForm.querySelectorAll('input[type="number"]').forEach(input => input.value = '');
+                newForm.querySelectorAll('input[type="checkbox"]').forEach(input => input.checked = false);
+
+                // Add remove button if not the first form
+                if (bankDetailFormCount > 1) {
+                    const removeBtn = document.createElement('button');
+                    removeBtn.type = 'button';
+                    removeBtn.className = 'btn btn-danger btn-sm mt-2';
+                    removeBtn.innerHTML = '<i class="fas fa-trash"></i> Remove';
+                    removeBtn.onclick = function() {
+                        newForm.remove();
+                        bankDetailFormCount--;
+                    };
+                    newForm.appendChild(removeBtn);
+                }
+
+                bankDetailForms.appendChild(newForm);
+                
+                // Add listeners to the new checkbox
+                const newCheckbox = newForm.querySelector('input[name^="is_primary-"]');
+                if (newCheckbox) {
+                    newCheckbox.addEventListener('change', function() {
+                        handlePrimaryCheckboxChange(this);
+                    });
+                }
+            });
+        }
+
+        // Initialize primary checkbox listeners on page load
+        addPrimaryCheckboxListeners();
+
+        // Handle primary checkbox validation in edit modals
+        $('.edit-bank-detail-btn').on('click', function() {
+            const bankDetailId = $(this).data('bank-detail-id');
+            const isCurrentlyPrimary = $(this).data('is-primary') === 'true';
+            const editModal = $(`#editBankDetailModal${bankDetailId}`);
+            
+            editModal.on('shown.bs.modal', function() {
+                const primaryCheckbox = editModal.find(`#edit_is_primary_${bankDetailId}`);
+                const validationDiv = editModal.find(`#primary-validation-${bankDetailId}`);
+                
+                // Check if there are other primary bank details (excluding current one if it's already primary)
+                const otherPrimaryBankDetails = $('.card-body .badge.bg-primary').length;
+                const hasOtherPrimary = isCurrentlyPrimary ? otherPrimaryBankDetails > 1 : otherPrimaryBankDetails > 0;
+                
+                // Add event listener to primary checkbox
+                primaryCheckbox.off('change.primaryValidation').on('change.primaryValidation', function() {
+                    if (this.checked && hasOtherPrimary) {
+                        validationDiv.show();
+                    } else {
+                        validationDiv.hide();
+                    }
+                });
+                
+                // Initialize validation state
+                if (primaryCheckbox.is(':checked') && hasOtherPrimary) {
+                    validationDiv.show();
+                } else {
+                    validationDiv.hide();
+                }
+            });
         });
 
-        // Bank detail form handling
+        // Bank detail form submission handling
         const bankDetailForm = document.getElementById('bank-detail-form');
         if (bankDetailForm) {
             bankDetailForm.addEventListener('submit', function(e) {
@@ -908,35 +1044,35 @@
                 let hasValidData = false;
                 
                 bankDetailFormItems.forEach((formItem, index) => {
-                    const bankName = formItem.querySelector('input[name^="bank_name-"]').value.trim();
-                    const branch = formItem.querySelector('input[name^="branch-"]').value.trim();
-                    const accountNumber = formItem.querySelector('input[name^="account_number-"]').value.trim();
-                    const bankUsername = formItem.querySelector('input[name^="bank_username-"]').value.trim();
-                    const isPrimary = formItem.querySelector('input[name^="is_primary-"]').checked;
+                    const bankNameField = formItem.querySelector('input[name^="bank_name-"]');
+                    const branchField = formItem.querySelector('input[name^="branch-"]');
+                    const accountNumberField = formItem.querySelector('input[name^="account_number-"]');
+                    const bankUsernameField = formItem.querySelector('input[name^="bank_username-"]');
+                    const isPrimaryField = formItem.querySelector('input[name^="is_primary-"]');
+                    
+                    const bankName = bankNameField.value.trim();
+                    const branch = branchField.value.trim();
+                    const accountNumber = accountNumberField.value.trim();
+                    const bankUsername = bankUsernameField.value.trim();
+                    const isPrimary = isPrimaryField.checked;
+                    
+                    // Extract the actual field index from the field name
+                    const fieldIndex = bankNameField.name.match(/-(\d+)$/)[1];
                     
                     // Only include if at least required fields are filled
                     if (bankName && branch && accountNumber) {
                         hasValidData = true;
-                        formData.append(`bank_name-${index}`, bankName);
-                        formData.append(`branch-${index}`, branch);
-                        formData.append(`account_number-${index}`, accountNumber);
-                        formData.append(`bank_username-${index}`, bankUsername);
-                        formData.append(`is_primary-${index}`, isPrimary);
+                        formData.append(`bank_name-${fieldIndex}`, bankName);
+                        formData.append(`branch-${fieldIndex}`, branch);
+                        formData.append(`account_number-${fieldIndex}`, accountNumber);
+                        formData.append(`bank_username-${fieldIndex}`, bankUsername);
+                        formData.append(`is_primary-${fieldIndex}`, isPrimary);
                     }
                 });
                 
                 if (!hasValidData) {
                     alert('Please fill in at least one bank detail with required fields (Bank Name, Branch, Account Number).');
                     return;
-                }
-                
-                // Check if any form has primary checked
-                const primaryChecked = document.querySelector('input[name^="is_primary-"]:checked');
-                if (primaryChecked) {
-                    // Show confirmation dialog for primary account
-                    if (!confirm('Setting this as primary will unmark other bank details as primary. Continue?')) {
-                        return;
-                    }
                 }
                 
                 // Submit the form
@@ -958,94 +1094,19 @@
             });
         }
 
-        // Bank detail form handling with dynamic forms
-        const addMoreBankDetailBtn = document.getElementById('add-more-bank-detail');
-        const bankDetailForms = document.getElementById('bank-detail-forms');
-        let bankDetailFormCount = 1;
+        window.onload = function () {
+            var joining_date = document.getElementById("joining_date");
+            if (joining_date) {
+                joining_date.nepaliDatePicker();
+            }
 
-        if (addMoreBankDetailBtn) {
-            addMoreBankDetailBtn.addEventListener('click', function() {
-                bankDetailFormCount++;
-                const newForm = document.querySelector('.bank-detail-form-item').cloneNode(true);
+            $('.nep_date').nepaliDatePicker()
 
-                // Update IDs and names to be unique
-                const inputs = newForm.querySelectorAll('input, label');
-                inputs.forEach(input => {
-                    if (input.id) input.id = input.id.replace('-0', `-${bankDetailFormCount}`);
-                    if (input.name) input.name = input.name.replace('-0', `-${bankDetailFormCount}`);
-                    if (input.htmlFor) input.htmlFor = input.htmlFor.replace('-0', `-${bankDetailFormCount}`);
-                });
-
-                // Clear values
-                newForm.querySelectorAll('input[type="text"]').forEach(input => input.value = '');
-                newForm.querySelectorAll('input[type="checkbox"]').forEach(input => input.checked = false);
-
-                // Add remove button if not the first form
-                if (bankDetailFormCount > 1) {
-                    const removeBtn = document.createElement('button');
-                    removeBtn.type = 'button';
-                    removeBtn.className = 'btn btn-danger btn-sm mt-2';
-                    removeBtn.innerHTML = '<i class="fas fa-trash"></i> Remove';
-                    removeBtn.onclick = function() {
-                        newForm.remove();
-                        bankDetailFormCount--;
-                    };
-                    newForm.appendChild(removeBtn);
-                }
-
-                bankDetailForms.appendChild(newForm);
+            // Initialize Nepali date picker for all issue date fields
+            document.querySelectorAll('input[id^="id_issue_date-"]').forEach(function(element) {
+                element.nepaliDatePicker();
             });
-        }
-
-        // Handle bank detail edit modal data population
-        document.querySelectorAll('.edit-bank-detail-btn').forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                const bankDetailId = this.getAttribute('data-bank-detail-id');
-                const bankName = this.getAttribute('data-bank-name');
-                const bankUsername = this.getAttribute('data-bank-username');
-                const branch = this.getAttribute('data-branch');
-                const accountNumber = this.getAttribute('data-account-number');
-                const isPrimary = this.getAttribute('data-is-primary') === 'true';
-                
-                const modal = document.getElementById(`editBankDetailModal${bankDetailId}`);
-                if (modal) {
-                    modal.querySelector('input[name="bank_name"]').value = bankName;
-                    modal.querySelector('input[name="bank_username"]').value = bankUsername;
-                    modal.querySelector('input[name="branch"]').value = branch;
-                    modal.querySelector('input[name="account_number"]').value = accountNumber;
-                    modal.querySelector('input[name="is_primary"]').checked = isPrimary;
-                }
-            });
-        });
+        };
     });
-
-    window.onload = function () {
-        var joining_date = document.getElementById("joining_date");
-        if (joining_date) {
-            joining_date.nepaliDatePicker();
-        }
-
-        $('.nep_date').nepaliDatePicker()
-
-        // Initialize Nepali date picker for all issue date fields
-        document.querySelectorAll('input[id^="id_issue_date-"]').forEach(function(element) {
-            element.nepaliDatePicker();
-        });
-    };
-
-    const fileInput = document.getElementById('id_profile_profile_picture');
-    const profileForm = document.getElementById('profile-form');
-    if (fileInput && profileForm) {
-        // Clone the input to preserve event listeners and UI
-        const clonedInput = fileInput.cloneNode(true);
-        clonedInput.style.display = 'none';  // hide it in form
-        profileForm.appendChild(clonedInput);
-
-        // Sync file selection from original input to hidden one
-        fileInput.addEventListener('change', function () {
-            clonedInput.files = fileInput.files;
-        });
-    }
 </script>
-{% endblock %}
-
+{% endblock scripts %}
