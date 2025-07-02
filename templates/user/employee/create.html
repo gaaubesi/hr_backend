@@ -859,7 +859,6 @@
             });
         }
 
-
         // Preview profile picture before upload
         const profilePictureInput = document.getElementById('id_profile_profile_picture');
         const profilePreview = document.getElementById('profile-preview');
@@ -916,7 +915,7 @@
         function handlePrimaryCheckboxChange(changedCheckbox) {
             const allPrimaryCheckboxes = document.querySelectorAll('input[name^="is_primary-"]');
             
-            // Check if there are existing primary bank details
+            // Check if there are existing primary bank details in the displayed cards
             const existingPrimaryBankDetails = document.querySelectorAll('.card-body .badge.bg-primary');
             const hasOtherPrimary = existingPrimaryBankDetails.length > 0;
             
@@ -925,20 +924,49 @@
             
             // If setting primary and there's already a primary bank detail, show alert
             if (changedCheckbox.checked && hasOtherPrimary) {
-                if (alertDiv) alertDiv.style.display = 'block';
+                if (alertDiv) {
+                    alertDiv.style.display = 'block';
+                    // Update the warning message to be more specific
+                    const warningText = alertDiv.querySelector('i').nextSibling;
+                    if (warningText) {
+                        warningText.textContent = ` Marking this as primary will unmark existing primary bank detail.`;
+                    }
+                }
             } else {
                 if (alertDiv) alertDiv.style.display = 'none';
             }
             
-            // Uncheck all other checkboxes in the form
-            allPrimaryCheckboxes.forEach(checkbox => {
-                if (checkbox !== changedCheckbox) {
-                    checkbox.checked = false;
-                    // Hide their alerts too
-                    const otherAlertDiv = checkbox.closest('.col-md-12').querySelector('.primary-create-warning');
-                    if (otherAlertDiv) otherAlertDiv.style.display = 'none';
+            // If this checkbox is being checked, uncheck all other checkboxes in the form
+            if (changedCheckbox.checked) {
+                allPrimaryCheckboxes.forEach(checkbox => {
+                    if (checkbox !== changedCheckbox) {
+                        checkbox.checked = false;
+                        // Hide their alerts too
+                        const otherAlertDiv = checkbox.closest('.col-md-12').querySelector('.primary-create-warning');
+                        if (otherAlertDiv) otherAlertDiv.style.display = 'none';
+                    }
+                });
+                
+                // Remove any suggestion messages when a primary is selected
+                document.querySelectorAll('.primary-suggestion').forEach(suggestion => {
+                    suggestion.remove();
+                });
+            } else {
+                // If unchecking and there are no existing primary bank details, suggest keeping one primary
+                if (!hasOtherPrimary && allPrimaryCheckboxes.length > 1) {
+                    const checkedCount = Array.from(allPrimaryCheckboxes).filter(cb => cb.checked).length;
+                    if (checkedCount === 0) {
+                        // Show a gentle suggestion to keep at least one primary
+                        const suggestionDiv = changedCheckbox.closest('.col-md-12').querySelector('.primary-suggestion');
+                        if (!suggestionDiv) {
+                            const newSuggestionDiv = document.createElement('div');
+                            newSuggestionDiv.className = 'alert alert-info mt-2 primary-suggestion';
+                            newSuggestionDiv.innerHTML = '<i class="fas fa-info-circle me-2"></i> Consider marking one bank detail as primary for easier identification.';
+                            changedCheckbox.closest('.col-md-12').appendChild(newSuggestionDiv);
+                        }
+                    }
                 }
-            });
+            }
         }
 
         // Add event listeners to primary checkboxes
@@ -1014,6 +1042,12 @@
                 primaryCheckbox.off('change.primaryValidation').on('change.primaryValidation', function() {
                     if (this.checked && hasOtherPrimary) {
                         validationDiv.show();
+                        // Update the warning message to be more specific
+                        const warningText = validationDiv.find('i').next();
+                        if (warningText.length) {
+                            const otherCount = isCurrentlyPrimary ? otherPrimaryBankDetails - 1 : otherPrimaryBankDetails;
+                            warningText.text(` Another bank detail${otherCount > 1 ? 's are' : ' is'} already set as primary. Setting this as primary will unmark the other${otherCount > 1 ? 's' : ''} as primary.`);
+                        }
                     } else {
                         validationDiv.hide();
                     }
@@ -1022,6 +1056,12 @@
                 // Initialize validation state
                 if (primaryCheckbox.is(':checked') && hasOtherPrimary) {
                     validationDiv.show();
+                    // Update the warning message to be more specific
+                    const warningText = validationDiv.find('i').next();
+                    if (warningText.length) {
+                        const otherCount = isCurrentlyPrimary ? otherPrimaryBankDetails - 1 : otherPrimaryBankDetails;
+                        warningText.text(` Another bank detail${otherCount > 1 ? 's are' : ' is'} already set as primary. Setting this as primary will unmark the other${otherCount > 1 ? 's' : ''} as primary.`);
+                    }
                 } else {
                     validationDiv.hide();
                 }
@@ -1033,6 +1073,17 @@
         if (bankDetailForm) {
             bankDetailForm.addEventListener('submit', function(e) {
                 e.preventDefault();
+                
+                // Check if any new bank detail is being marked as primary
+                const newPrimaryCheckboxes = document.querySelectorAll('input[name^="is_primary-"]:checked');
+                const existingPrimaryBankDetails = document.querySelectorAll('.card-body .badge.bg-primary');
+                
+                if (newPrimaryCheckboxes.length > 0 && existingPrimaryBankDetails.length > 0) {
+                    const confirmMessage = `You are marking new bank detail as primary. This will unmark existing primary bank detail. Do you want to continue?`;
+                    if (!confirm(confirmMessage)) {
+                        return;
+                    }
+                }
                 
                 // Collect all form data
                 const formData = new FormData();
@@ -1075,6 +1126,12 @@
                     return;
                 }
                 
+                // Show loading state
+                const submitButton = bankDetailForm.querySelector('button[type="submit"]');
+                const originalText = submitButton.innerHTML;
+                submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+                submitButton.disabled = true;
+                
                 // Submit the form
                 fetch(window.location.href, {
                     method: 'POST',
@@ -1082,7 +1139,28 @@
                 })
                 .then(response => {
                     if (response.ok) {
-                        window.location.reload();
+                        // Show success message before reload
+                        const successMessage = document.createElement('div');
+                        successMessage.className = 'alert alert-success alert-dismissible fade show position-fixed';
+                        successMessage.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+                        successMessage.innerHTML = `
+                            <i class="fas fa-check-circle me-2"></i>
+                            Bank details saved successfully!
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        `;
+                        document.body.appendChild(successMessage);
+                        
+                        // Auto-dismiss after 3 seconds
+                        setTimeout(() => {
+                            if (successMessage.parentNode) {
+                                successMessage.remove();
+                            }
+                        }, 3000);
+                        
+                        // Reload the page to show updated data
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1000);
                     } else {
                         throw new Error('Network response was not ok');
                     }
@@ -1090,9 +1168,54 @@
                 .catch(error => {
                     console.error('Error:', error);
                     alert('An error occurred while saving bank details.');
+                    // Reset button state
+                    submitButton.innerHTML = originalText;
+                    submitButton.disabled = false;
                 });
             });
         }
+
+        // Function to refresh the display of existing bank details
+        function refreshBankDetailsDisplay() {
+            // This function can be called after successful form submission
+            // to update the display without a full page reload
+            const bankDetailsContainer = document.querySelector('.card-body .row');
+            if (bankDetailsContainer) {
+                // Trigger a small animation to indicate update
+                bankDetailsContainer.style.opacity = '0.7';
+                setTimeout(() => {
+                    bankDetailsContainer.style.opacity = '1';
+                }, 200);
+            }
+        }
+
+        // Function to update primary status indicators
+        function updatePrimaryStatusIndicators() {
+            const primaryBadges = document.querySelectorAll('.card-body .badge.bg-primary');
+            const primaryCheckboxes = document.querySelectorAll('input[name^="is_primary-"]');
+            
+            // If there are existing primary bank details, show appropriate warnings
+            if (primaryBadges.length > 0) {
+                primaryCheckboxes.forEach(checkbox => {
+                    if (checkbox.checked) {
+                        const alertDiv = checkbox.closest('.col-md-12').querySelector('.primary-create-warning');
+                        if (alertDiv) {
+                            alertDiv.style.display = 'block';
+                            const warningText = alertDiv.querySelector('i').nextSibling;
+                            if (warningText) {
+                                warningText.textContent = ` Marking this as primary will unmark ${primaryBadges.length} existing primary bank detail${primaryBadges.length > 1 ? 's' : ''} as primary.`;
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // Initialize primary checkbox listeners on page load
+        addPrimaryCheckboxListeners();
+        
+        // Update primary status indicators on page load
+        updatePrimaryStatusIndicators();
 
         window.onload = function () {
             var joining_date = document.getElementById("joining_date");

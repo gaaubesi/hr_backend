@@ -258,7 +258,7 @@ class EmployeeEditView(UpdateView):
     def get_common_context(self, user, profile):
         documents = Document.objects.filter(user=user)
         payouts = Payout.objects.filter(user=user)
-        bank_details = BankDetail.objects.filter(account_holder=user)
+        bank_details = BankDetail.objects.filter(account_holder=user).order_by('-id')
         uploaded_document_types = documents.values_list('document_type', flat=True)
         payout = Payout.objects.filter(user=user).first()
 
@@ -526,7 +526,7 @@ class EmployeeDetailView(View):
         working_detail = getattr(employee, 'working_detail', None)
         documents = Document.objects.filter(user=employee)
         payouts = Payout.objects.filter(user=employee)
-        bank_details = BankDetail.objects.filter(account_holder=employee)
+        bank_details = BankDetail.objects.filter(account_holder=employee).order_by('-id')
         calendar_type = Setup.get_calendar_type()
         
         context = {
