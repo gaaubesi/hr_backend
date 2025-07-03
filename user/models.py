@@ -67,21 +67,31 @@ class Profile(models.Model):
         ('AB+', 'AB+'),
         ('AB-', 'AB-'),
     ]
-    
+
+    STATUS = [
+        ('currently_working', 'Currently Working'),
+        ('not_working', 'Not Working'),
+        ('deactivated', 'Deactivated'),
+    ]
 
     user = models.OneToOneField(AuthUser, related_name='profile', on_delete=models.CASCADE)
     profile_picture = models.ImageField(upload_to='profile_pictures/', null=True, blank=True)
     address = models.CharField(max_length=100, blank=True, null=True)
     dob = models.DateField(null=True, verbose_name='Date of birth')
-    gender = models.CharField(max_length=1, choices=GENDER, default='F')
-    religion = models.CharField(max_length=50, choices=RELIGION, default='H')
-    mobile_number = models.CharField(max_length=15, blank=True, null=True)      
-    secondary_number = models.CharField(max_length=15, blank=True, null=True)      
+    gender = models.CharField(max_length=1, choices=GENDER, default='F')  # Make sure GENDER is defined
+    religion = models.CharField(max_length=50, choices=RELIGION, default='H')  # Make sure RELIGION is defined
+    mobile_number = models.CharField(max_length=15, blank=True, null=True)
+    secondary_number = models.CharField(max_length=15, blank=True, null=True)
     personal_email = models.EmailField(blank=True, null=True, verbose_name='Personal email')
     blood_group = models.CharField(max_length=5, choices=BLOOD_GROUPS, null=True, blank=True)
-    marital_status = models.CharField(max_length=1, choices=MARITAL_STATUS, default="S")
+    marital_status = models.CharField(max_length=1, choices=MARITAL_STATUS, default='S')  # Make sure MARITAL_STATUS is defined
     is_verified = models.BooleanField(default=False)
-    currently_working = models.BooleanField(default=True)
+    status = models.CharField(max_length=20, choices=STATUS, null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.user.username}'s Profile"
+
+
 
 
 class WorkingDetail(models.Model):
