@@ -130,7 +130,7 @@
                     <button class="nav-link {% if active_tab == 'payout' %}active{% endif %}" id="payout-tab" data-bs-toggle="tab" data-bs-target="#payout" type="button">Payout</button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link {% if active_tab == 'bank_detail' %}active{% endif %}" id="bank-detail-tab" data-bs-toggle="tab" data-bs-target="#bank-detail" type="button">Bank Details</button>
+                    <button class="nav-link {% if active_tab == 'bank_detail' %}active{% endif %}" id="bank-detail-tab" data-bs-toggle="tab" data-bs-target="#bank_detail" type="button">Bank Details</button>
                 </li>
             </ul>
 
@@ -239,159 +239,159 @@
                     </script>
 
                     <!-- Display existing documents -->
-                    <div class="mt-4">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h5 class="mb-0">Documents</h5>
-                        </div>
-                        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
-                            {% for document in documents %}
-                            <div class="col" data-document-type="{{ document.document_type }}">
-                                <div class="card h-100 shadow-sm">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between align-items-start mb-2">
-                                            <h6 class="card-title mb-0 text-truncate" style="max-width: 70%;">
-                                                {{ document.get_document_type_display }}
-                                            </h6>
-                                            <span>
-                                                <i class="fas fa-calendar-alt me-1"></i>
-                                                {{ document.uploaded_at|date:"M d, Y" }}
-                                            </span>
-                                        </div>
-                                        <div class="small text-muted mb-2">
-                                            {% if document.document_number %}
-                                                <div>Document Number: {{ document.document_number }}</div>
-                                            {% else %}
-                                                <div style="visibility: hidden;">Document Number placeholder</div>
-                                            {% endif %}
-                                            
-                                            {% if document.issue_date %}
-                                                <div>Issue Date: {{ document.issue_date|to_nepali_date }}</div>
-                                            {% else %}
-                                                <div style="visibility: hidden;">Issue Date placeholder</div>
-                                            {% endif %}
-                                            
-                                            {% if document.issue_body %}
-                                                <div>Issuing Authority: {{ document.issue_body }}</div>
-                                            {% else %}
-                                                <div style="visibility: hidden;">Issuing Authority placeholder</div>
-                                            {% endif %}
-                                        </div>
-
-                                        <div class="d-flex gap-2 mt-3">
-                                            <button type="button" class="btn btn-outline-primary btn-sm flex-grow-1" data-bs-toggle="modal" data-bs-target="#viewDocumentModal{{ document.id }}">
-                                                <i class="fas fa-eye me-1"></i> View
-                                            </button>
-                                            <button type="button" class="btn btn-outline-warning btn-sm edit-document-btn"
-                                                data-bs-toggle="modal"
-                                                data-bs-target="#editDocumentModal{{ document.id }}"
-                                                data-document-id="{{ document.id }}"
-                                                data-document-type="{{ document.document_type }}"
-                                                data-issue-date="{{ document.issue_date|date:'Y-m-d' }}"
-                                                data-issue-body="{% if document.issue_body %}{{ document.issue_body.id }}{% endif %}">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                            <button type="button" class="btn btn-outline-danger btn-sm delete-btn"
-                                                data-bs-toggle="modal"
-                                                data-bs-target="#confirmationModal"
-                                                data-url="{% url 'user:delete_document' document.id %}"
-                                                data-title="Delete Document">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Document View Modal -->
-                            <div class="modal fade" id="viewDocumentModal{{ document.id }}" tabindex="-1" aria-labelledby="viewDocumentModalLabel{{ document.id }}" aria-hidden="true">
-                                <div class="modal-dialog modal-md">
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title" id="viewDocumentModalLabel{{ document.id }}">{{ document.get_document_type_display }}</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                        </div>
-                                        <div class="modal-body p-0">
-                                            {% with file_url=document.document_file.url|lower %}
-                                                {% if '.pdf' in file_url %}
-                                                    <iframe src="{{ document.document_file.url }}" width="100%" height="500px" frameborder="0"></iframe>
-                                                {% elif '.jpg' in file_url or '.jpeg' in file_url or '.png' in file_url %}
-                                                    <img src="{{ document.document_file.url }}" class="img-fluid" alt="{{ document.get_document_type_display }}">
+                    <div class="card mt-4">
+                        <div class="card-header bg-primary text-white fw-bold reduced-padding">Documents</div> 
+                        <div class="card-body">
+                            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
+                                {% for document in documents %}
+                                <div class="col" data-document-type="{{ document.document_type }}">
+                                    <div class="card h-100 shadow-sm">
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                                <h6 class="card-title mb-0 text-truncate" style="max-width: 70%;">
+                                                    {{ document.get_document_type_display }}
+                                                </h6>
+                                                <span>
+                                                    <i class="fas fa-calendar-alt me-1"></i>
+                                                    {{ document.uploaded_at|date:"M d, Y" }}
+                                                </span>
+                                            </div>
+                                            <div class="small text-muted mb-2">
+                                                {% if document.document_number %}
+                                                    <div>Document Number: {{ document.document_number }}</div>
                                                 {% else %}
-                                                    <div class="alert alert-info m-3">
-                                                        <p class="mb-0">This file type cannot be previewed. <a href="{{ document.document_file.url }}" class="alert-link" target="_blank">Download</a> to view.</p>
-                                                    </div>
+                                                    <div style="visibility: hidden;">Document Number placeholder</div>
                                                 {% endif %}
-                                            {% endwith %}
-                                        </div>
-                                        <div class="modal-footer">
-                                            <a href="{{ document.document_file.url }}" class="btn btn-primary" target="_blank">
-                                                <i class="fas fa-download me-1"></i> Download
-                                            </a>
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                                
+                                                {% if document.issue_date %}
+                                                    <div>Issue Date: {{ document.issue_date|to_nepali_date }}</div>
+                                                {% else %}
+                                                    <div style="visibility: hidden;">Issue Date placeholder</div>
+                                                {% endif %}
+                                                
+                                                {% if document.issue_body %}
+                                                    <div>Issuing Authority: {{ document.issue_body }}</div>
+                                                {% else %}
+                                                    <div style="visibility: hidden;">Issuing Authority placeholder</div>
+                                                {% endif %}
+                                            </div>
+
+                                            <div class="d-flex gap-2 mt-3">
+                                                <button type="button" class="btn btn-outline-primary btn-sm flex-grow-1" data-bs-toggle="modal" data-bs-target="#viewDocumentModal{{ document.id }}">
+                                                    <i class="fas fa-eye me-1"></i> View
+                                                </button>
+                                                <button type="button" class="btn btn-outline-warning btn-sm edit-document-btn"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#editDocumentModal{{ document.id }}"
+                                                    data-document-id="{{ document.id }}"
+                                                    data-document-type="{{ document.document_type }}"
+                                                    data-issue-date="{{ document.issue_date|date:'Y-m-d' }}"
+                                                    data-issue-body="{% if document.issue_body %}{{ document.issue_body.id }}{% endif %}">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-outline-danger btn-sm delete-btn"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#confirmationModal"
+                                                    data-url="{% url 'user:delete_document' document.id %}"
+                                                    data-title="Delete Document">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <!-- Document Edit Modal -->
-                            <div class="modal fade" id="editDocumentModal{{ document.id }}" tabindex="-1" aria-labelledby="editDocumentModalLabel{{ document.id }}" aria-hidden="true">
-                                <div class="modal-dialog  modal-lg">
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title" id="editDocumentModalLabel{{ document.id }}">Edit Document</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                        </div>
-                                        <form method="POST" enctype="multipart/form-data" action="{% url 'user:edit_document' document.id %}">
-                                            {% csrf_token %}
-                                            <input type="hidden" name="form_section" value="document">
-                                            <div class="modal-body">
-                                                <div class="mb-3">
-                                                    <label for="edit_document_type_{{ document.id }}" class="form-label">Document Type <span class="asteriskField">*</span></label>
-                                                    <select name="document_type" id="edit_document_type_{{ document.id }}" class="form-select" required>
-                                                        {% for value, label in document_form.fields.document_type.choices %}
-                                                            <option value="{{ value }}" {% if value == document.document_type %}selected{% endif %}>{{ label }}</option>
-                                                        {% endfor %}
-                                                    </select>
-                                                </div>
-                                                <div class="mb-3">
-                                                    <label for="edit_document_file_{{ document.id }}" class="form-label">Document File (Optional - leave empty to keep current file)</label>
-                                                    <input type="file" name="document_file" id="edit_document_file_{{ document.id }}" class="form-control" accept="image/*,.pdf,.doc,.docx">
-                                                    <small class="text-muted">Current file: {{ document.document_file.name }}</small>
-                                                </div>
-                                                <div class="mb-3">
-                                                    <label for="edit_document_number_{{ document.id }}" class="form-label">Document Number<span class="asteriskField">*</span></label>
-                                                    <input type="text" name="document_number" id="edit_document_number_{{ document.id }}" class="form-control" placeholder="Enter document number" value="{{ document.document_number|default:'' }}">
-                                                </div>
-                                                <div class="mb-3">
-                                                    <label for="edit_issue_date_{{ document.id }}" class="form-label">Issue Date</label>
-                                                    <input type="text" name="issue_date" id="edit_issue_date_{{ document.id }}" class="form-control" placeholder="YYYY-MM-DD (BS)" value="{% if document.issue_date %}{{ document.issue_date|to_nepali_date }}{% endif %}">
-                                                </div>
-                                                <div class="mb-3">
-                                                    <label for="edit_issue_body_{{ document.id }}" class="form-label">Issuing Authority</label>
-                                                    <select name="issue_body" id="edit_issue_body_{{ document.id }}" class="form-control select2">
-                                                        <option value="">Select Issuing Authority</option>
-                                                        {% for district in document_form.fields.issue_body.queryset %}
-                                                            <option value="{{ district.id }}" {% if district.id == document.issue_body.id %}selected{% endif %}>{{ district.name }}</option>
-                                                        {% endfor %}
-                                                    </select>
-                                                </div>
+                                <!-- Document View Modal -->
+                                <div class="modal fade" id="viewDocumentModal{{ document.id }}" tabindex="-1" aria-labelledby="viewDocumentModalLabel{{ document.id }}" aria-hidden="true">
+                                    <div class="modal-dialog modal-md">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="viewDocumentModalLabel{{ document.id }}">{{ document.get_document_type_display }}</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body p-0">
+                                                {% with file_url=document.document_file.url|lower %}
+                                                    {% if '.pdf' in file_url %}
+                                                        <iframe src="{{ document.document_file.url }}" width="100%" height="500px" frameborder="0"></iframe>
+                                                    {% elif '.jpg' in file_url or '.jpeg' in file_url or '.png' in file_url %}
+                                                        <img src="{{ document.document_file.url }}" class="img-fluid" alt="{{ document.get_document_type_display }}">
+                                                    {% else %}
+                                                        <div class="alert alert-info m-3">
+                                                            <p class="mb-0">This file type cannot be previewed. <a href="{{ document.document_file.url }}" class="alert-link" target="_blank">Download</a> to view.</p>
+                                                        </div>
+                                                    {% endif %}
+                                                {% endwith %}
                                             </div>
                                             <div class="modal-footer">
-                                                <button type="submit" class="btn btn-success">{{ action }}</button>
-                                                <button type="button" class="btn btn-warning" data-bs-dismiss="modal">Cancel</button>
+                                                <a href="{{ document.document_file.url }}" class="btn btn-primary" target="_blank">
+                                                    <i class="fas fa-download me-1"></i> Download
+                                                </a>
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                                             </div>
-                                        </form>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            {% empty %}
-                            <div class="col-12">
-                                <div class="alert alert-info mb-0">
-                                    <i class="fas fa-info-circle me-2"></i>No documents uploaded yet.
+
+                                <!-- Document Edit Modal -->
+                                <div class="modal fade" id="editDocumentModal{{ document.id }}" tabindex="-1" aria-labelledby="editDocumentModalLabel{{ document.id }}" aria-hidden="true">
+                                    <div class="modal-dialog  modal-lg">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="editDocumentModalLabel{{ document.id }}">Edit Document</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <form method="POST" enctype="multipart/form-data" action="{% url 'user:edit_document' document.id %}">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="form_section" value="document">
+                                                <div class="modal-body">
+                                                    <div class="mb-3">
+                                                        <label for="edit_document_type_{{ document.id }}" class="form-label">Document Type <span class="asteriskField">*</span></label>
+                                                        <select name="document_type" id="edit_document_type_{{ document.id }}" class="form-select" required>
+                                                            {% for value, label in document_form.fields.document_type.choices %}
+                                                                <option value="{{ value }}" {% if value == document.document_type %}selected{% endif %}>{{ label }}</option>
+                                                            {% endfor %}
+                                                        </select>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label for="edit_document_file_{{ document.id }}" class="form-label">Document File (Optional - leave empty to keep current file)</label>
+                                                        <input type="file" name="document_file" id="edit_document_file_{{ document.id }}" class="form-control" accept="image/*,.pdf,.doc,.docx">
+                                                        <small class="text-muted">Current file: {{ document.document_file.name }}</small>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label for="edit_document_number_{{ document.id }}" class="form-label">Document Number<span class="asteriskField">*</span></label>
+                                                        <input type="text" name="document_number" id="edit_document_number_{{ document.id }}" class="form-control" placeholder="Enter document number" value="{{ document.document_number|default:'' }}">
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label for="edit_issue_date_{{ document.id }}" class="form-label">Issue Date</label>
+                                                        <input type="text" name="issue_date" id="edit_issue_date_{{ document.id }}" class="form-control" placeholder="YYYY-MM-DD (BS)" value="{% if document.issue_date %}{{ document.issue_date|to_nepali_date }}{% endif %}">
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label for="edit_issue_body_{{ document.id }}" class="form-label">Issuing Authority</label>
+                                                        <select name="issue_body" id="edit_issue_body_{{ document.id }}" class="form-control select2">
+                                                            <option value="">Select Issuing Authority</option>
+                                                            {% for district in document_form.fields.issue_body.queryset %}
+                                                                <option value="{{ district.id }}" {% if district.id == document.issue_body.id %}selected{% endif %}>{{ district.name }}</option>
+                                                            {% endfor %}
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="submit" class="btn btn-success">{{ action }}</button>
+                                                    <button type="button" class="btn btn-warning" data-bs-dismiss="modal">Cancel</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                            {% endfor %}
-                        </div>
+                                {% empty %}
+                                <div class="col-12">
+                                    <div class="alert alert-info mb-0">
+                                        <i class="fas fa-info-circle me-2"></i>No documents uploaded yet.
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div> 
+                        </div>                         
                     </div>
                 </div>
 
@@ -413,7 +413,7 @@
                 </div>
 
                 <!-- Bank Details Tab -->
-                <div class="tab-pane fade {% if active_tab == 'bank_detail' %}show active{% endif %}" id="bank-detail" role="tabpanel">
+                <div class="tab-pane fade {% if active_tab == 'bank_detail' %}show active{% endif %}" id="bank_detail" role="tabpanel">
                     <form method="POST" id="bank-detail-form">
                         {% csrf_token %}
                         <input type="hidden" name="form_section" value="bank_detail">
@@ -436,7 +436,7 @@
                                             </div>
                                             <div class="col-md-3 ps-2">
                                                 <label for="id_account_number-0">Account Number <span class="asteriskField">*</span></label>
-                                                <input type="text" name="account_number-0" id="id_account_number-0" class="form-control" placeholder="Enter account number" required>
+                                                <input type="number" name="account_number-0" id="id_account_number-0" class="form-control" placeholder="Enter account number" required>
                                             </div>
                                             <div class="col-md-12">
                                                 <div class="form-check">
@@ -444,6 +444,10 @@
                                                     <label class="form-check-label" for="id_is_primary-0">
                                                         Set as Primary
                                                     </label>
+                                                </div>
+                                                <div class="alert alert-warning mt-2 primary-create-warning" style="display: none;">
+                                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                                    Marking this as primary will unmark other bank details as primary.
                                                 </div>
                                             </div>
                                         </div>
@@ -463,62 +467,62 @@
                     </form>
 
                     <!-- Display existing bank details -->
-                    <div class="mt-4">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h5 class="mb-0">Bank Details</h5>
-                        </div>
-                        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
-                            {% for bank_detail in bank_details %}
-                            <div class="col">
-                                <div class="card h-100 shadow-sm">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between align-items-start mb-2">
-                                            <h6 class="card-title mb-0 text-truncate" style="max-width: 70%;">
-                                                {{ bank_detail.bank_name }}
-                                                {% if bank_detail.is_primary %}
-                                                    <span class="badge bg-primary ms-1">Primary</span>
-                                                {% endif %}
-                                            </h6>
-                                        </div>
-                                        <div class="small text-muted mb-2">
-                                            <div><strong>Branch:</strong> {{ bank_detail.branch }}</div>
-                                            <div><strong>Account:</strong> {{ bank_detail.account_number }}</div>
-                                            {% if bank_detail.bank_username %}
-                                                <div><strong>Username:</strong> {{ bank_detail.bank_username }}</div>
-                                            {% endif %}
-                                        </div>
+                    <div class="card mt-4">
+                        <div class="card-header bg-primary text-white fw-bold reduced-padding">Bank Details</div> 
+                            <div class="card-body">
+                                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
+                                    {% for bank_detail in bank_details %}
+                                    <div class="col">
+                                        <div class="card h-100 shadow-sm">
+                                            <div class="card-body">
+                                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                                    <h6 class="card-title mb-0 text-truncate" style="max-width: 70%;">
+                                                        {{ bank_detail.bank_name }}
+                                                        {% if bank_detail.is_primary %}
+                                                            <span class="badge bg-primary ms-1">Primary</span>
+                                                        {% endif %}
+                                                    </h6>
+                                                </div>
+                                                <div class="small text-muted mb-2">
+                                                    <div><strong>Branch:</strong> {{ bank_detail.branch }}</div>
+                                                    <div><strong>Account:</strong> {{ bank_detail.account_number }}</div>
+                                                    {% if bank_detail.bank_username %}
+                                                        <div><strong>Username:</strong> {{ bank_detail.bank_username }}</div>
+                                                    {% endif %}
+                                                </div>
 
-                                        <div class="d-flex gap-2 mt-3">
-                                            <button type="button" class="btn btn-outline-warning btn-sm edit-bank-detail-btn flex-grow-1"
-                                                data-bs-toggle="modal"
-                                                data-bs-target="#editBankDetailModal{{ bank_detail.id }}"
-                                                data-bank-detail-id="{{ bank_detail.id }}"
-                                                data-bank-name="{{ bank_detail.bank_name }}"
-                                                data-bank-username="{{ bank_detail.bank_username|default:'' }}"
-                                                data-branch="{{ bank_detail.branch }}"
-                                                data-account-number="{{ bank_detail.account_number }}"
-                                                data-is-primary="{% if bank_detail.is_primary %}true{% else %}false{% endif %}">
-                                                <i class="fas fa-edit me-1"></i> Edit
-                                            </button>
-                                            <button type="button" class="btn btn-outline-danger btn-sm delete-btn"
-                                                data-bs-toggle="modal"
-                                                data-bs-target="#confirmationModal"
-                                                data-url="{% url 'user:delete_bank_detail' bank_detail.id %}"
-                                                data-title="Delete Bank Detail">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
+                                                <div class="d-flex gap-2 mt-3">
+                                                    <button type="button" class="btn btn-outline-warning btn-sm edit-bank-detail-btn flex-grow-1"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#editBankDetailModal{{ bank_detail.id }}"
+                                                        data-bank-detail-id="{{ bank_detail.id }}"
+                                                        data-bank-name="{{ bank_detail.bank_name }}"
+                                                        data-bank-username="{{ bank_detail.bank_username|default:'' }}"
+                                                        data-branch="{{ bank_detail.branch }}"
+                                                        data-account-number="{{ bank_detail.account_number }}"
+                                                        data-is-primary="{% if bank_detail.is_primary %}true{% else %}false{% endif %}">
+                                                        <i class="fas fa-edit me-1"></i> Edit
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-danger btn-sm delete-btn"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#confirmationModal"
+                                                        data-url="{% url 'user:delete_bank_detail' bank_detail.id %}"
+                                                        data-title="Delete Bank Detail">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
+                                    {% empty %}
+                                    <div class="col-12">
+                                        <div class="alert alert-info mb-0">
+                                            <i class="fas fa-info-circle me-2"></i>No bank details added yet.
+                                        </div>
+                                    </div>
+                                    {% endfor %}
                                 </div>
                             </div>
-                            {% empty %}
-                            <div class="col-12">
-                                <div class="alert alert-info mb-0">
-                                    <i class="fas fa-info-circle me-2"></i>No bank details added yet.
-                                </div>
-                            </div>
-                            {% endfor %}
-                        </div>
                     </div>
                 </div>
             </div>
@@ -571,7 +575,7 @@
                     </div>
                     <div class="mb-3">
                         <label for="edit_account_number_{{ bank_detail.id }}" class="form-label">Account Number</label>
-                        <input type="text" class="form-control" id="edit_account_number_{{ bank_detail.id }}" name="account_number" value="{{ bank_detail.account_number }}" required>
+                        <input type="number" class="form-control" id="edit_account_number_{{ bank_detail.id }}" name="account_number" value="{{ bank_detail.account_number }}" required>
                     </div>
                     <div class="mb-3">
                         <div class="form-check">
@@ -579,6 +583,10 @@
                             <label class="form-check-label" for="edit_is_primary_{{ bank_detail.id }}">
                                 Set as Primary
                             </label>
+                        </div>
+                        <div id="primary-validation-{{ bank_detail.id }}" class="alert alert-warning mt-2" style="display: none;">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Another bank detail is already set as primary. Setting this as primary will unmark the other one.
                         </div>
                     </div>
                 </div>
@@ -789,15 +797,12 @@
                 });
 
                 // Clear values
-                // Clear all text inputs (including issue date)
                 newForm.querySelectorAll('input[type="text"]').forEach(input => input.value = '');
-                // Clear all file inputs
                 newForm.querySelectorAll('input[type="file"]').forEach(input => input.value = '');
-                // Reset selects
                 newForm.querySelectorAll('select').forEach(select => {
                     select.selectedIndex = 0;
                     updateDocumentTypeOptions(select);
-                });
+                });s
 
                 // Remove any select2 containers that may have been cloned
                 newForm.querySelectorAll('.select2-container').forEach(el => el.remove());
@@ -854,7 +859,6 @@
             });
         }
 
-
         // Preview profile picture before upload
         const profilePictureInput = document.getElementById('id_profile_profile_picture');
         const profilePreview = document.getElementById('profile-preview');
@@ -888,73 +892,17 @@
         }
 
         // Sync file selection from original input to hidden one
-        fileInput.addEventListener('change', function () {
-            clonedInput.files = fileInput.files;
-        });
+        const fileInput = document.getElementById('id_profile_profile_picture');
+        const profileForm = document.getElementById('profile-form');
+        if (fileInput && profileForm) {
+            // Clone the input to preserve event listeners and UI
+            const clonedInput = fileInput.cloneNode(true);
+            clonedInput.style.display = 'none';  // hide it in form
+            profileForm.appendChild(clonedInput);
 
-        // Bank detail form handling
-        const bankDetailForm = document.getElementById('bank-detail-form');
-        if (bankDetailForm) {
-            bankDetailForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                // Collect all form data
-                const formData = new FormData();
-                formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
-                formData.append('form_section', 'bank_detail');
-                
-                // Get all bank detail forms
-                const bankDetailFormItems = document.querySelectorAll('.bank-detail-form-item');
-                let hasValidData = false;
-                
-                bankDetailFormItems.forEach((formItem, index) => {
-                    const bankName = formItem.querySelector('input[name^="bank_name-"]').value.trim();
-                    const branch = formItem.querySelector('input[name^="branch-"]').value.trim();
-                    const accountNumber = formItem.querySelector('input[name^="account_number-"]').value.trim();
-                    const bankUsername = formItem.querySelector('input[name^="bank_username-"]').value.trim();
-                    const isPrimary = formItem.querySelector('input[name^="is_primary-"]').checked;
-                    
-                    // Only include if at least required fields are filled
-                    if (bankName && branch && accountNumber) {
-                        hasValidData = true;
-                        formData.append(`bank_name-${index}`, bankName);
-                        formData.append(`branch-${index}`, branch);
-                        formData.append(`account_number-${index}`, accountNumber);
-                        formData.append(`bank_username-${index}`, bankUsername);
-                        formData.append(`is_primary-${index}`, isPrimary);
-                    }
-                });
-                
-                if (!hasValidData) {
-                    alert('Please fill in at least one bank detail with required fields (Bank Name, Branch, Account Number).');
-                    return;
-                }
-                
-                // Check if any form has primary checked
-                const primaryChecked = document.querySelector('input[name^="is_primary-"]:checked');
-                if (primaryChecked) {
-                    // Show confirmation dialog for primary account
-                    if (!confirm('Setting this as primary will unmark other bank details as primary. Continue?')) {
-                        return;
-                    }
-                }
-                
-                // Submit the form
-                fetch(window.location.href, {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => {
-                    if (response.ok) {
-                        window.location.reload();
-                    } else {
-                        throw new Error('Network response was not ok');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('An error occurred while saving bank details.');
-                });
+            // Sync file selection from original input to hidden one
+            fileInput.addEventListener('change', function () {
+                clonedInput.files = fileInput.files;
             });
         }
 
@@ -962,6 +910,73 @@
         const addMoreBankDetailBtn = document.getElementById('add-more-bank-detail');
         const bankDetailForms = document.getElementById('bank-detail-forms');
         let bankDetailFormCount = 1;
+
+        // Simple function to handle primary checkbox changes
+        function handlePrimaryCheckboxChange(changedCheckbox) {
+            const allPrimaryCheckboxes = document.querySelectorAll('input[name^="is_primary-"]');
+            
+            // Check if there are existing primary bank details in the displayed cards
+            const existingPrimaryBankDetails = document.querySelectorAll('.card-body .badge.bg-primary');
+            const hasOtherPrimary = existingPrimaryBankDetails.length > 0;
+            
+            // Find the alert div for this checkbox
+            const alertDiv = changedCheckbox.closest('.col-md-12').querySelector('.primary-create-warning');
+            
+            // If setting primary and there's already a primary bank detail, show alert
+            if (changedCheckbox.checked && hasOtherPrimary) {
+                if (alertDiv) {
+                    alertDiv.style.display = 'block';
+                    // Update the warning message to be more specific
+                    const warningText = alertDiv.querySelector('i').nextSibling;
+                    if (warningText) {
+                        warningText.textContent = ` Marking this as primary will unmark existing primary bank detail.`;
+                    }
+                }
+            } else {
+                if (alertDiv) alertDiv.style.display = 'none';
+            }
+            
+            // If this checkbox is being checked, uncheck all other checkboxes in the form
+            if (changedCheckbox.checked) {
+                allPrimaryCheckboxes.forEach(checkbox => {
+                    if (checkbox !== changedCheckbox) {
+                        checkbox.checked = false;
+                        // Hide their alerts too
+                        const otherAlertDiv = checkbox.closest('.col-md-12').querySelector('.primary-create-warning');
+                        if (otherAlertDiv) otherAlertDiv.style.display = 'none';
+                    }
+                });
+                
+                // Remove any suggestion messages when a primary is selected
+                document.querySelectorAll('.primary-suggestion').forEach(suggestion => {
+                    suggestion.remove();
+                });
+            } else {
+                // If unchecking and there are no existing primary bank details, suggest keeping one primary
+                if (!hasOtherPrimary && allPrimaryCheckboxes.length > 1) {
+                    const checkedCount = Array.from(allPrimaryCheckboxes).filter(cb => cb.checked).length;
+                    if (checkedCount === 0) {
+                        // Show a gentle suggestion to keep at least one primary
+                        const suggestionDiv = changedCheckbox.closest('.col-md-12').querySelector('.primary-suggestion');
+                        if (!suggestionDiv) {
+                            const newSuggestionDiv = document.createElement('div');
+                            newSuggestionDiv.className = 'alert alert-info mt-2 primary-suggestion';
+                            newSuggestionDiv.innerHTML = '<i class="fas fa-info-circle me-2"></i> Consider marking one bank detail as primary for easier identification.';
+                            changedCheckbox.closest('.col-md-12').appendChild(newSuggestionDiv);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Add event listeners to primary checkboxes
+        function addPrimaryCheckboxListeners() {
+            document.querySelectorAll('input[name^="is_primary-"]').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    handlePrimaryCheckboxChange(this);
+                });
+            });
+        }
 
         if (addMoreBankDetailBtn) {
             addMoreBankDetailBtn.addEventListener('click', function() {
@@ -978,6 +993,7 @@
 
                 // Clear values
                 newForm.querySelectorAll('input[type="text"]').forEach(input => input.value = '');
+                newForm.querySelectorAll('input[type="number"]').forEach(input => input.value = '');
                 newForm.querySelectorAll('input[type="checkbox"]').forEach(input => input.checked = false);
 
                 // Add remove button if not the first form
@@ -994,58 +1010,226 @@
                 }
 
                 bankDetailForms.appendChild(newForm);
+                
+                // Add listeners to the new checkbox
+                const newCheckbox = newForm.querySelector('input[name^="is_primary-"]');
+                if (newCheckbox) {
+                    newCheckbox.addEventListener('change', function() {
+                        handlePrimaryCheckboxChange(this);
+                    });
+                }
             });
         }
 
-        // Handle bank detail edit modal data population
-        document.querySelectorAll('.edit-bank-detail-btn').forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                const bankDetailId = this.getAttribute('data-bank-detail-id');
-                const bankName = this.getAttribute('data-bank-name');
-                const bankUsername = this.getAttribute('data-bank-username');
-                const branch = this.getAttribute('data-branch');
-                const accountNumber = this.getAttribute('data-account-number');
-                const isPrimary = this.getAttribute('data-is-primary') === 'true';
+        // Initialize primary checkbox listeners on page load
+        addPrimaryCheckboxListeners();
+
+        // Handle primary checkbox validation in edit modals
+        $('.edit-bank-detail-btn').on('click', function() {
+            const bankDetailId = $(this).data('bank-detail-id');
+            const isCurrentlyPrimary = $(this).data('is-primary') === 'true';
+            const editModal = $(`#editBankDetailModal${bankDetailId}`);
+            
+            editModal.on('shown.bs.modal', function() {
+                const primaryCheckbox = editModal.find(`#edit_is_primary_${bankDetailId}`);
+                const validationDiv = editModal.find(`#primary-validation-${bankDetailId}`);
                 
-                const modal = document.getElementById(`editBankDetailModal${bankDetailId}`);
-                if (modal) {
-                    modal.querySelector('input[name="bank_name"]').value = bankName;
-                    modal.querySelector('input[name="bank_username"]').value = bankUsername;
-                    modal.querySelector('input[name="branch"]').value = branch;
-                    modal.querySelector('input[name="account_number"]').value = accountNumber;
-                    modal.querySelector('input[name="is_primary"]').checked = isPrimary;
+                // Check if there are other primary bank details (excluding current one if it's already primary)
+                const otherPrimaryBankDetails = $('.card-body .badge.bg-primary').length;
+                const hasOtherPrimary = isCurrentlyPrimary ? otherPrimaryBankDetails > 1 : otherPrimaryBankDetails > 0;
+                
+                // Add event listener to primary checkbox
+                primaryCheckbox.off('change.primaryValidation').on('change.primaryValidation', function() {
+                    if (this.checked && hasOtherPrimary) {
+                        validationDiv.show();
+                        // Update the warning message to be more specific
+                        const warningText = validationDiv.find('i').next();
+                        if (warningText.length) {
+                            const otherCount = isCurrentlyPrimary ? otherPrimaryBankDetails - 1 : otherPrimaryBankDetails;
+                            warningText.text(` Another bank detail${otherCount > 1 ? 's are' : ' is'} already set as primary. Setting this as primary will unmark the other${otherCount > 1 ? 's' : ''} as primary.`);
+                        }
+                    } else {
+                        validationDiv.hide();
+                    }
+                });
+                
+                // Initialize validation state
+                if (primaryCheckbox.is(':checked') && hasOtherPrimary) {
+                    validationDiv.show();
+                    // Update the warning message to be more specific
+                    const warningText = validationDiv.find('i').next();
+                    if (warningText.length) {
+                        const otherCount = isCurrentlyPrimary ? otherPrimaryBankDetails - 1 : otherPrimaryBankDetails;
+                        warningText.text(` Another bank detail${otherCount > 1 ? 's are' : ' is'} already set as primary. Setting this as primary will unmark the other${otherCount > 1 ? 's' : ''} as primary.`);
+                    }
+                } else {
+                    validationDiv.hide();
                 }
             });
         });
-    });
 
-    window.onload = function () {
-        var joining_date = document.getElementById("joining_date");
-        if (joining_date) {
-            joining_date.nepaliDatePicker();
+        // Bank detail form submission handling
+        const bankDetailForm = document.getElementById('bank-detail-form');
+        if (bankDetailForm) {
+            bankDetailForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Check if any new bank detail is being marked as primary
+                const newPrimaryCheckboxes = document.querySelectorAll('input[name^="is_primary-"]:checked');
+                const existingPrimaryBankDetails = document.querySelectorAll('.card-body .badge.bg-primary');
+                
+                if (newPrimaryCheckboxes.length > 0 && existingPrimaryBankDetails.length > 0) {
+                    const confirmMessage = `You are marking new bank detail as primary. This will unmark existing primary bank detail. Do you want to continue?`;
+                    if (!confirm(confirmMessage)) {
+                        return;
+                    }
+                }
+                
+                // Collect all form data
+                const formData = new FormData();
+                formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+                formData.append('form_section', 'bank_detail');
+                
+                // Get all bank detail forms
+                const bankDetailFormItems = document.querySelectorAll('.bank-detail-form-item');
+                let hasValidData = false;
+                
+                bankDetailFormItems.forEach((formItem, index) => {
+                    const bankNameField = formItem.querySelector('input[name^="bank_name-"]');
+                    const branchField = formItem.querySelector('input[name^="branch-"]');
+                    const accountNumberField = formItem.querySelector('input[name^="account_number-"]');
+                    const bankUsernameField = formItem.querySelector('input[name^="bank_username-"]');
+                    const isPrimaryField = formItem.querySelector('input[name^="is_primary-"]');
+                    
+                    const bankName = bankNameField.value.trim();
+                    const branch = branchField.value.trim();
+                    const accountNumber = accountNumberField.value.trim();
+                    const bankUsername = bankUsernameField.value.trim();
+                    const isPrimary = isPrimaryField.checked;
+                    
+                    // Extract the actual field index from the field name
+                    const fieldIndex = bankNameField.name.match(/-(\d+)$/)[1];
+                    
+                    // Only include if at least required fields are filled
+                    if (bankName && branch && accountNumber) {
+                        hasValidData = true;
+                        formData.append(`bank_name-${fieldIndex}`, bankName);
+                        formData.append(`branch-${fieldIndex}`, branch);
+                        formData.append(`account_number-${fieldIndex}`, accountNumber);
+                        formData.append(`bank_username-${fieldIndex}`, bankUsername);
+                        formData.append(`is_primary-${fieldIndex}`, isPrimary);
+                    }
+                });
+                
+                if (!hasValidData) {
+                    alert('Please fill in at least one bank detail with required fields (Bank Name, Branch, Account Number).');
+                    return;
+                }
+                
+                // Show loading state
+                const submitButton = bankDetailForm.querySelector('button[type="submit"]');
+                const originalText = submitButton.innerHTML;
+                submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+                submitButton.disabled = true;
+                
+                // Submit the form
+                fetch(window.location.href, {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (response.ok) {
+                        // Show success message before reload
+                        const successMessage = document.createElement('div');
+                        successMessage.className = 'alert alert-success alert-dismissible fade show position-fixed';
+                        successMessage.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+                        successMessage.innerHTML = `
+                            <i class="fas fa-check-circle me-2"></i>
+                            Bank details saved successfully!
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        `;
+                        document.body.appendChild(successMessage);
+                        
+                        // Auto-dismiss after 3 seconds
+                        setTimeout(() => {
+                            if (successMessage.parentNode) {
+                                successMessage.remove();
+                            }
+                        }, 3000);
+                        
+                        // Reload the page to show updated data
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1000);
+                    } else {
+                        throw new Error('Network response was not ok');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while saving bank details.');
+                    // Reset button state
+                    submitButton.innerHTML = originalText;
+                    submitButton.disabled = false;
+                });
+            });
         }
 
-        $('.nep_date').nepaliDatePicker()
+        // Function to refresh the display of existing bank details
+        function refreshBankDetailsDisplay() {
+            // This function can be called after successful form submission
+            // to update the display without a full page reload
+            const bankDetailsContainer = document.querySelector('.card-body .row');
+            if (bankDetailsContainer) {
+                // Trigger a small animation to indicate update
+                bankDetailsContainer.style.opacity = '0.7';
+                setTimeout(() => {
+                    bankDetailsContainer.style.opacity = '1';
+                }, 200);
+            }
+        }
 
-        // Initialize Nepali date picker for all issue date fields
-        document.querySelectorAll('input[id^="id_issue_date-"]').forEach(function(element) {
-            element.nepaliDatePicker();
-        });
-    };
+        // Function to update primary status indicators
+        function updatePrimaryStatusIndicators() {
+            const primaryBadges = document.querySelectorAll('.card-body .badge.bg-primary');
+            const primaryCheckboxes = document.querySelectorAll('input[name^="is_primary-"]');
+            
+            // If there are existing primary bank details, show appropriate warnings
+            if (primaryBadges.length > 0) {
+                primaryCheckboxes.forEach(checkbox => {
+                    if (checkbox.checked) {
+                        const alertDiv = checkbox.closest('.col-md-12').querySelector('.primary-create-warning');
+                        if (alertDiv) {
+                            alertDiv.style.display = 'block';
+                            const warningText = alertDiv.querySelector('i').nextSibling;
+                            if (warningText) {
+                                warningText.textContent = ` Marking this as primary will unmark ${primaryBadges.length} existing primary bank detail${primaryBadges.length > 1 ? 's' : ''} as primary.`;
+                            }
+                        }
+                    }
+                });
+            }
+        }
 
-    const fileInput = document.getElementById('id_profile_profile_picture');
-    const profileForm = document.getElementById('profile-form');
-    if (fileInput && profileForm) {
-        // Clone the input to preserve event listeners and UI
-        const clonedInput = fileInput.cloneNode(true);
-        clonedInput.style.display = 'none';  // hide it in form
-        profileForm.appendChild(clonedInput);
+        // Initialize primary checkbox listeners on page load
+        addPrimaryCheckboxListeners();
+        
+        // Update primary status indicators on page load
+        updatePrimaryStatusIndicators();
 
-        // Sync file selection from original input to hidden one
-        fileInput.addEventListener('change', function () {
-            clonedInput.files = fileInput.files;
-        });
-    }
+        window.onload = function () {
+            var joining_date = document.getElementById("joining_date");
+            if (joining_date) {
+                joining_date.nepaliDatePicker();
+            }
+
+            $('.nep_date').nepaliDatePicker()
+
+            // Initialize Nepali date picker for all issue date fields
+            document.querySelectorAll('input[id^="id_issue_date-"]').forEach(function(element) {
+                element.nepaliDatePicker();
+            });
+        };
+    });
 </script>
-{% endblock %}
-
+{% endblock scripts %}

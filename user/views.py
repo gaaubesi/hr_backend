@@ -5,7 +5,6 @@ from django.views.generic import ListView, UpdateView
 from django.urls import reverse_lazy, reverse
 from django.contrib import messages
 from django.db import transaction
-from django.forms import modelformset_factory
 from django.conf import settings
 
 from leave.models import EmployeeLeave, LeaveType
@@ -244,392 +243,241 @@ class EmployeeCreateView(View):
             # Re-render with errors
             context = get_common_context(active_tab='bank_detail')
             return render(request, self.template_name, context)
-
         return redirect(f"{reverse('user:employee_create')}?tab=bank_detail")
 
 
 class EmployeeEditView(UpdateView):
     template_name = 'user/employee/create.html'
-    # success_url = reverse_lazy('user:employee_list')
 
-    def get(self, request, *args, **kwargs):
-        user = get_object_or_404(AuthUser, pk=kwargs['pk'])
+    def get_user_related_data(self, pk):
+        user = get_object_or_404(AuthUser, pk=pk)
         profile, _ = Profile.objects.get_or_create(user=user)
         working_detail, _ = WorkingDetail.objects.get_or_create(employee=user)
+        return user, profile, working_detail
 
-        user_form = UserForm(instance=user)
-        profile_form = ProfileForm(instance=profile)
-        working_form = WorkingDetailForm(instance=working_detail)
-        document_form = DocumentForm()
-        
-        # Check if payout exists and prefill the form
-        payout = Payout.objects.filter(user=user).first()
-        payout_form = PayoutForm(instance=payout) if payout else PayoutForm()
-        
-        # Get bank details and prefill the form
-        bank_details = BankDetail.objects.filter(account_holder=user)
-        
+    def get_common_context(self, user, profile):
         documents = Document.objects.filter(user=user)
         payouts = Payout.objects.filter(user=user)
-        
-        # Get list of already uploaded document types
+        bank_details = BankDetail.objects.filter(account_holder=user).order_by('-id')
         uploaded_document_types = documents.values_list('document_type', flat=True)
+        payout = Payout.objects.filter(user=user).first()
+
+        return {
+            'documents': documents,
+            'payouts': payouts,
+            'bank_details': bank_details,
+            'uploaded_document_types': uploaded_document_types,
+            'payout_form': PayoutForm(instance=payout) if payout else PayoutForm(),
+            'document_form': DocumentForm(),
+            'profile_picture': profile.profile_picture if profile.profile_picture else None,
+        }
+
+    def get(self, request, *args, **kwargs):
+        user, profile, working_detail = self.get_user_related_data(kwargs['pk'])
+
+        context = {
+            'user_form': UserForm(instance=user),
+            'profile_form': ProfileForm(instance=profile),
+            'working_form': WorkingDetailForm(instance=working_detail),
+            'profile': profile,
+            'action': 'Update',
+        }
+        context.update(self.get_common_context(user, profile))
+        return render(request, self.template_name, context)
+
+    def post(self, request, *args, **kwargs):
+        user, profile, working_detail = self.get_user_related_data(kwargs['pk'])
+        section = request.POST.get('form_section')
+
+        if section == 'profile':
+            return self.handle_profile_section(request, user, profile)
+        elif section == 'work':
+            return self.handle_work_section(request, user, working_detail, profile)
+        elif section == 'document':
+            return self.handle_document_section(request, user, profile)
+        elif section == 'payout':
+            return self.handle_payout_section(request, user, profile, working_detail)
+        elif section == 'bank_detail':
+            return self.handle_bank_detail_section(request, user, profile, working_detail)
+        return redirect('user:employee_edit', pk=user.id)
+
+    def handle_profile_section(self, request, user, profile):
+        user_form = UserForm(request.POST, instance=user)
+        profile_form = ProfileForm(request.POST, request.FILES, instance=profile)
+
+        if user_form.is_valid() and profile_form.is_valid():
+            try:
+                user_form.save()
+                profile_obj = profile_form.save(commit=False)
+                profile_obj.user = user
+                if 'profile-profile_picture' in request.FILES:
+                    profile_obj.profile_picture = request.FILES['profile-profile_picture']
+                profile_obj.save()
+                assignLeaveToEmployee(user)
+                messages.success(request, "Profile updated successfully.")
+                return redirect('user:employee_edit', pk=user.id)
+            except Exception as e:
+                messages.error(request, f"Something went wrong: {str(e)}")
 
         context = {
             'user_form': user_form,
             'profile_form': profile_form,
-            'working_form': working_form,
-            'document_form': document_form,
-            'payout_form': payout_form,
-            'documents': documents,
-            'payouts': payouts,
-            'bank_details': bank_details,
+            'working_form': WorkingDetailForm(instance=WorkingDetail.objects.get(employee=user)),
             'profile': profile,
             'action': 'Update',
-            'uploaded_document_types': uploaded_document_types,
-            'profile_picture': profile.profile_picture if profile.profile_picture else None,
+            'active_tab': 'profile'
         }
+        context.update(self.get_common_context(user, profile))
         return render(request, self.template_name, context)
 
-    def post(self, request, *args, **kwargs):
-        user = get_object_or_404(AuthUser, pk=kwargs['pk'])
-        profile, _ = Profile.objects.get_or_create(user=user)
-        working_detail, _ = WorkingDetail.objects.get_or_create(employee=user)
+    def handle_work_section(self, request, user, working_detail, profile):
+        working_form = WorkingDetailForm(request.POST, instance=working_detail)
+        if working_form.is_valid():
+            try:
+                working_detail = working_form.save(commit=False)
+                working_detail.employee = user
+                working_detail.save()
+                assignLeaveToEmployee(user)
+                messages.success(request, "Work details updated successfully.")
+                return redirect(f"{reverse('user:employee_edit', kwargs={'pk': user.id})}?tab=work")
+            except Exception as e:
+                messages.error(request, f"Something went wrong: {str(e)}")
 
-        section = request.POST.get('form_section')
-        
-        if section == 'profile':
-            user_form = UserForm(request.POST, instance=user)
-            profile_form = ProfileForm(request.POST, request.FILES, instance=profile)
-            working_form = WorkingDetailForm(instance=working_detail)
+        context = {
+            'user_form': UserForm(instance=user),
+            'profile_form': ProfileForm(instance=profile),
+            'working_form': working_form,
+            'profile': profile,
+            'action': 'Update',
+            'active_tab': 'work'
+        }
+        context.update(self.get_common_context(user, profile))
+        return render(request, self.template_name, context)
 
-            if user_form.is_valid() and profile_form.is_valid():
-                try:
-                    with transaction.atomic():
-                        user = user_form.save()
+    def handle_document_section(self, request, user, profile):
+        document_forms = []
+        for key in request.FILES:
+            if key.startswith('document_file-'):
+                index = key.split('-')[1]
+                document_type = request.POST.get(f'document_type-{index}')
+                document_file = request.FILES.get(f'document_file-{index}')
+                document_number = request.POST.get(f'document_number-{index}')
+                issue_date = request.POST.get(f'issue_date-{index}')
+                issue_body = request.POST.get(f'issue_body-{index}')
+                if document_type and document_file:
+                    document_forms.append({
+                        'document_type': document_type,
+                        'document_file': document_file,
+                        'document_number': document_number,
+                        'issue_date': issue_date,
+                        'issue_body': issue_body
+                    })
 
-                        profile = profile_form.save(commit=False)
-                        profile.user = user
-                        # Handle profile picture upload
-                        if 'profile-profile_picture' in request.FILES:
-                            profile.profile_picture = request.FILES['profile-profile_picture']
-
-                        profile.save()
-
-                        if profile:
-                            assignLeaveToEmployee(user)
-                        
-                        messages.success(request, "Profile details updated successfully.")
-                        return redirect('user:employee_edit', pk=user.id)
-                except Exception as e:
-                    messages.error(request, f"Error updating profile: {str(e)}")
-            else:
-                # Re-render forms with errors
-                document_form = DocumentForm()
-                payout = Payout.objects.filter(user=user).first()
-                payout_form = PayoutForm(instance=payout) if payout else PayoutForm()
-                documents = Document.objects.filter(user=user)
-                payouts = Payout.objects.filter(user=user)
-                bank_details = BankDetail.objects.filter(account_holder=user)
-                
-                context = {
-                    'user_form': user_form,
-                    'profile_form': profile_form,
-                    'working_form': working_form,
-                    'document_form': document_form,
-                    'payout_form': payout_form,
-                    'documents': documents,
-                    'payouts': payouts,
-                    'bank_details': bank_details,
-                    'profile': profile,
-                    'action': 'Update',
-                    'uploaded_document_types': documents.values_list('document_type', flat=True),
-                    'profile_picture': profile.profile_picture if profile.profile_picture else None,
-                    'active_tab': 'profile'
-                }
-                return render(request, self.template_name, context)
-
-        elif section == 'work':
-            user_form = UserForm(instance=user)
-            profile_form = ProfileForm(instance=profile)
-            working_form = WorkingDetailForm(request.POST, instance=working_detail)
-
-            if working_form.is_valid():
-                try:
-                    with transaction.atomic():
-                        working_detail = working_form.save(commit=False)
-                        working_detail.employee = user
-                        working_detail.save()
-                        if working_detail:
-                            assignLeaveToEmployee(user)
-
-                        messages.success(request, "Work details updated successfully.")
-                        return redirect(f"{reverse('user:employee_edit', kwargs={'pk': user.id})}?tab=work")
-                except Exception as e:
-                    messages.error(request, f"Error updating work details: {str(e)}")
-            else:
-                # Re-render forms with errors
-                document_form = DocumentForm()
-                payout = Payout.objects.filter(user=user).first()
-                payout_form = PayoutForm(instance=payout) if payout else PayoutForm()
-                documents = Document.objects.filter(user=user)
-                payouts = Payout.objects.filter(user=user)
-                bank_details = BankDetail.objects.filter(account_holder=user)
-                
-                context = {
-                    'user_form': user_form,
-                    'profile_form': profile_form,
-                    'working_form': working_form,
-                    'document_form': document_form,
-                    'payout_form': payout_form,
-                    'documents': documents,
-                    'payouts': payouts,
-                    'bank_details': bank_details,
-                    'profile': profile,
-                    'action': 'Update',
-                    'uploaded_document_types': documents.values_list('document_type', flat=True),
-                    'profile_picture': profile.profile_picture if profile.profile_picture else None,
-                    'active_tab': 'work'
-                }
-                return render(request, self.template_name, context)
-
-        elif section == 'document':
-            user_form = UserForm(instance=user)
-            profile_form = ProfileForm(instance=profile)
-            working_form = WorkingDetailForm(instance=working_detail)
-            
-            # Get all document forms from the request
-            document_forms = []
-            for key in request.FILES:
-                if key.startswith('document_file-'):
-                    index = key.split('-')[1]
-                    document_type = request.POST.get(f'document_type-{index}')
-                    document_file = request.FILES.get(f'document_file-{index}')
-                    document_number = request.POST.get(f'document_number-{index}')
-                    issue_date = request.POST.get(f'issue_date-{index}')
-                    issue_body = request.POST.get(f'issue_body-{index}')
-                    
-                    if document_type and document_file:
-                        document_forms.append({
-                            'document_type': document_type,
-                            'document_file': document_file,
-                            'document_number': document_number,
-                            'issue_date': issue_date,
-                            'issue_body': issue_body
-                        })
-            
-            if not document_forms:
-                messages.error(request, "Please select at least one document to upload.")
-                return redirect(f"{reverse('user:employee_edit', kwargs={'pk': user.id})}?tab=document")
-            
-            success_count = 0
-            for form_data in document_forms:
-                try:
-                    # Convert Nepali date to English date
-                    issue_date = None
-                    if form_data['issue_date'] and form_data['document_type'] != 'resume':
-                        try:
-                            issue_date = nepali_str_to_english(form_data['issue_date'])
-                        except Exception as e:
-                            messages.error(request, f"Invalid date format for document {form_data['document_type']}: {str(e)}")
-                            continue
-
-                    # Convert issue_body ID to District instance
-                    issue_body = None
-                    if form_data['issue_body'] and form_data['document_type'] != 'resume':
-                        
-                        try:
-                            issue_body = District.objects.get(id=form_data['issue_body'])
-                        except District.DoesNotExist:
-                            messages.error(request, f"Invalid district ID for document {form_data['document_type']}")
-                            continue
-
-                    document = Document(
-                        user=user,
-                        document_type=form_data['document_type'],
-                        document_file=form_data['document_file'],
-                        document_number=form_data['document_number'] if form_data['document_type'] != 'resume' else None,
-                        issue_date=issue_date,
-                        issue_body=issue_body
-                    )
-                    document.save()
-                    success_count += 1
-                except Exception as e:
-                    messages.error(request, f"Error uploading document: {str(e)}")
-            
-            if success_count > 0:
-                messages.success(request, f"{success_count} document(s) uploaded successfully.")
-            
+        if not document_forms:
+            messages.error(request, "Please select at least one document to upload.")
             return redirect(f"{reverse('user:employee_edit', kwargs={'pk': user.id})}?tab=document")
 
-        elif section == 'payout':
-            user_form = UserForm(instance=user)
-            profile_form = ProfileForm(instance=profile)
-            working_form = WorkingDetailForm(instance=working_detail)
-            
-            # Check if payout exists for this user and payout_interval
-            payout_interval_id = request.POST.get('payout_interval')
-            existing_payout = None
-            if payout_interval_id:
-                existing_payout = Payout.objects.filter(user=user, payout_interval_id=payout_interval_id).first()
-            
-            payout_form = PayoutForm(request.POST, instance=existing_payout)
-            
-            if payout_form.is_valid():
-                try:
-                    payout = payout_form.save(commit=False)
-                    payout.user = user
-                    payout.created_by = request.user
-                    payout.save()
-                    messages.success(request, "Payout details saved successfully.")
-                except Exception as e:
-                    messages.error(request, f"Error saving payout: {str(e)}")
-            else:
-                # Re-render forms with errors
-                document_form = DocumentForm()
-                documents = Document.objects.filter(user=user)
-                payouts = Payout.objects.filter(user=user)
-                bank_details = BankDetail.objects.filter(account_holder=user)
-                
-                context = {
-                    'user_form': user_form,
-                    'profile_form': profile_form,
-                    'working_form': working_form,
-                    'document_form': document_form,
-                    'payout_form': payout_form,
-                    'documents': documents,
-                    'payouts': payouts,
-                    'bank_details': bank_details,
-                    'profile': profile,
-                    'action': 'Update',
-                    'uploaded_document_types': documents.values_list('document_type', flat=True),
-                    'profile_picture': profile.profile_picture if profile.profile_picture else None,
-                    'active_tab': 'payout'
-                }
-                return render(request, self.template_name, context)
-            
-            return redirect(f"{reverse('user:employee_edit', kwargs={'pk': user.id})}?tab=payout")
+        success_count = 0
+        for form_data in document_forms:
+            try:
+                issue_date = None
+                if form_data['issue_date'] and form_data['document_type'] != 'resume':
+                    issue_date = nepali_str_to_english(form_data['issue_date'])
 
-        elif section == 'bank_detail':
-            user_form = UserForm(instance=user)
-            profile_form = ProfileForm(instance=profile)
-            working_form = WorkingDetailForm(instance=working_detail)
-            document_form = DocumentForm()
-            payout = Payout.objects.filter(user=user).first()
-            payout_form = PayoutForm(instance=payout) if payout else PayoutForm()
-            
-            # Get existing bank details
-            documents = Document.objects.filter(user=user)
-            payouts = Payout.objects.filter(user=user)
-            bank_details = BankDetail.objects.filter(account_holder=user)
-            uploaded_document_types = documents.values_list('document_type', flat=True)
-            
-            # Get all bank detail forms from the request
-            bank_detail_forms = []
-            index = 0
-            
-            while True:
-                bank_name = request.POST.get(f'bank_name-{index}')
-                branch = request.POST.get(f'branch-{index}')
-                account_number = request.POST.get(f'account_number-{index}')
-                
-                if not bank_name or not branch or not account_number:
-                    break
-                    
-                bank_username = request.POST.get(f'bank_username-{index}', '')
-                is_primary = request.POST.get(f'is_primary-{index}') == 'on'
-                
-                # Create form data for this bank detail
-                form_data = {
-                    'bank_name': bank_name,
-                    'bank_username': bank_username,
-                    'branch': branch,
-                    'account_number': account_number,
-                    'is_primary': is_primary,
-                }
-                
-                bank_detail_form = BankDetailForm(form_data)
-                bank_detail_forms.append(bank_detail_form)
-                index += 1
-            
-            if not bank_detail_forms:
-                messages.error(request, "Please provide at least one bank detail.")
-                context = {
-                    'user_form': user_form,
-                    'profile_form': profile_form,
-                    'working_form': working_form,
-                    'document_form': document_form,
-                    'payout_form': payout_form,
-                    'documents': documents,
-                    'payouts': payouts,
-                    'bank_details': bank_details,
-                    'profile': profile,
-                    'action': 'Update',
-                    'uploaded_document_types': uploaded_document_types,
-                    'profile_picture': profile.profile_picture if profile.profile_picture else None,
-                    'active_tab': 'bank_detail'
-                }
-                return render(request, self.template_name, context)
-            
-            # Validate all forms
-            all_valid = all(form.is_valid() for form in bank_detail_forms)
-            
-            if all_valid:
-                try:
-                    with transaction.atomic():
-                        # If any form has is_primary=True, unmark all existing primary bank details
-                        has_primary = any(form.cleaned_data.get('is_primary') for form in bank_detail_forms)
-                        if has_primary:
-                            BankDetail.objects.filter(account_holder=user, is_primary=True).update(is_primary=False)
-                        
-                        # Save all bank details
-                        for form in bank_detail_forms:
-                            bank_detail = form.save(commit=False)
-                            bank_detail.account_holder = user
-                            bank_detail.save()
-                        
-                        messages.success(request, "Bank details saved successfully.")
-                except Exception as e:
-                    messages.error(request, f"Error saving bank details: {str(e)}")
-            else:
-                # Re-render forms with errors
-                context = {
-                    'user_form': user_form,
-                    'profile_form': profile_form,
-                    'working_form': working_form,
-                    'document_form': document_form,
-                    'payout_form': payout_form,
-                    'documents': documents,
-                    'payouts': payouts,
-                    'bank_details': bank_details,
-                    'profile': profile,
-                    'action': 'Update',
-                    'uploaded_document_types': uploaded_document_types,
-                    'profile_picture': profile.profile_picture if profile.profile_picture else None,
-                    'active_tab': 'bank_detail'
-                }
-                return render(request, self.template_name, context)
-            
-            # After successful save, redirect with context that includes existing bank details
-            context = {
-                'user_form': user_form,
-                'profile_form': profile_form,
-                'working_form': working_form,
-                'document_form': document_form,
-                'payout_form': payout_form,
-                'documents': documents,
-                'payouts': payouts,
-                'bank_details': bank_details,
-                'profile': profile,
-                'action': 'Update',
-                'uploaded_document_types': uploaded_document_types,
-                'profile_picture': profile.profile_picture if profile.profile_picture else None,
-                'active_tab': 'bank_detail'
+                issue_body = None
+                if form_data['issue_body'] and form_data['document_type'] != 'resume':
+                    issue_body = District.objects.get(id=form_data['issue_body'])
+
+                document = Document(
+                    user=user,
+                    document_type=form_data['document_type'],
+                    document_file=form_data['document_file'],
+                    document_number=form_data['document_number'] if form_data['document_type'] != 'resume' else None,
+                    issue_date=issue_date,
+                    issue_body=issue_body
+                )
+                document.save()
+                success_count += 1
+            except Exception as e:
+                messages.error(request, f"Error uploading {form_data['document_type']}: {str(e)}")
+
+        if success_count:
+            messages.success(request, f"{success_count} document(s) uploaded successfully.")
+        return redirect(f"{reverse('user:employee_edit', kwargs={'pk': user.id})}?tab=document")
+
+    def handle_payout_section(self, request, user, profile, working_detail):
+        payout_interval_id = request.POST.get('payout_interval')
+        existing_payout = Payout.objects.filter(user=user, payout_interval_id=payout_interval_id).first()
+        payout_form = PayoutForm(request.POST, instance=existing_payout)
+
+        if payout_form.is_valid():
+            try:
+                payout = payout_form.save(commit=False)
+                payout.user = user
+                payout.created_by = request.user
+                payout.save()
+                messages.success(request, "Payout saved successfully.")
+                return redirect(f"{reverse('user:employee_edit', kwargs={'pk': user.id})}?tab=payout")
+            except Exception as e:
+                messages.error(request, f"Error saving payout: {str(e)}")
+
+        context = {
+            'user_form': UserForm(instance=user),
+            'profile_form': ProfileForm(instance=profile),
+            'working_form': WorkingDetailForm(instance=working_detail),
+            'payout_form': payout_form,
+            'profile': profile,
+            'action': 'Update',
+            'active_tab': 'payout'
+        }
+        context.update(self.get_common_context(user, profile))
+        return render(request, self.template_name, context)
+
+    def handle_bank_detail_section(self, request, user, profile, working_detail):
+        bank_detail_forms = []
+        index = 0
+        while True:
+            bank_name = request.POST.get(f'bank_name-{index}')
+            branch = request.POST.get(f'branch-{index}')
+            account_number = request.POST.get(f'account_number-{index}')
+            if not bank_name or not branch or not account_number:
+                break
+            form_data = {
+                'bank_name': bank_name,
+                'branch': branch,
+                'account_number': account_number,
+                'bank_username': request.POST.get(f'bank_username-{index}', ''),
+                'is_primary': request.POST.get(f'is_primary-{index}') == 'on',
             }
-            return render(request, self.template_name, context)
+            form = BankDetailForm(form_data)
+            bank_detail_forms.append(form)
+            index += 1
 
-        return redirect('user:employee_edit', pk=user.id)
+        if not bank_detail_forms:
+            messages.error(request, "Please provide at least one bank detail.")
+        elif all(form.is_valid() for form in bank_detail_forms):
+            try:
+                if any(form.cleaned_data.get('is_primary') for form in bank_detail_forms):
+                    BankDetail.objects.filter(account_holder=user, is_primary=True).update(is_primary=False)
+                for form in bank_detail_forms:
+                    detail = form.save(commit=False)
+                    detail.account_holder = user
+                    detail.save()
+                messages.success(request, "Bank details saved successfully.")
+                return redirect(f"{reverse('user:employee_edit', kwargs={'pk': user.id})}?tab=bank_detail")
+            except Exception as e:
+                messages.error(request, f"Error saving bank details: {str(e)}")
 
+        context = {
+            'user_form': UserForm(instance=user),
+            'profile_form': ProfileForm(instance=profile),
+            'working_form': WorkingDetailForm(instance=working_detail),
+            'profile': profile,
+            'action': 'Update',
+            'active_tab': 'bank_detail'
+        }
+        context.update(self.get_common_context(user, profile))
+        return render(request, self.template_name, context)
 
 class EmployeeDeleteView(View):
     model = AuthUser
@@ -678,7 +526,7 @@ class EmployeeDetailView(View):
         working_detail = getattr(employee, 'working_detail', None)
         documents = Document.objects.filter(user=employee)
         payouts = Payout.objects.filter(user=employee)
-        bank_details = BankDetail.objects.filter(account_holder=employee)
+        bank_details = BankDetail.objects.filter(account_holder=employee).order_by('-id')
         calendar_type = Setup.get_calendar_type()
         
         context = {

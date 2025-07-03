@@ -76,6 +76,7 @@ class Profile(models.Model):
     gender = models.CharField(max_length=1, choices=GENDER, default='F')
     religion = models.CharField(max_length=50, choices=RELIGION, default='H')
     mobile_number = models.CharField(max_length=15, blank=True, null=True)      
+    secondary_number = models.CharField(max_length=15, blank=True, null=True)      
     personal_email = models.EmailField(blank=True, null=True, verbose_name='Personal email')
     blood_group = models.CharField(max_length=5, choices=BLOOD_GROUPS, null=True, blank=True)
     marital_status = models.CharField(max_length=1, choices=MARITAL_STATUS, default="S")
@@ -136,7 +137,7 @@ class BankDetail(models.Model):
     bank_name = models.CharField(max_length=50)
     bank_username = models.CharField(max_length=50, null=True)
     branch = models.CharField(max_length=20)
-    account_number = models.CharField(max_length=50)
+    account_number = models.BigIntegerField()
     is_primary = models.BooleanField(null=True, blank=True)
 
     def __str__(self):
