@@ -80,6 +80,9 @@ class Profile(models.Model):
     personal_email = models.EmailField(blank=True, null=True, verbose_name='Personal email')
     blood_group = models.CharField(max_length=5, choices=BLOOD_GROUPS, null=True, blank=True)
     marital_status = models.CharField(max_length=1, choices=MARITAL_STATUS, default="S")
+    is_verified = models.BooleanField(default=False)
+    currently_working = models.BooleanField(default=True)
+
 
 class WorkingDetail(models.Model):
     employee = models.OneToOneField(AuthUser, related_name='working_detail', on_delete=models.CASCADE)

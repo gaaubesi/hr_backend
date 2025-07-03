@@ -35,7 +35,14 @@
                         <i class="fas fa-user-circle fa-7x text-secondary"></i>
                     </div>
                 {% endif %}
-                <h5 class="mb-1">{{ employee.full_name }}</h5>
+                <h5 class="mb-1">
+                        {{ employee.full_name }} 
+                        {% if profile_form.instance.is_verified %}
+                            <i class="fas fa-square-check text-success ms-2" title="Verified"></i>
+                        {% else %}
+                            <i class="fas fa-square-xmark text-danger ms-2" title="Not Verified"></i>
+                        {% endif %}
+                </h5>
                 <p class="text-muted mb-1"><i class="fa-solid fa-envelope me-2"></i>{{ employee.email }}</p>
                 <p class="text-muted"><i class="fa-solid fa-phone me-2"></i>{{ profile.mobile_number }}</p>
             </div>
