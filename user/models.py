@@ -86,7 +86,7 @@ class Profile(models.Model):
     blood_group = models.CharField(max_length=5, choices=BLOOD_GROUPS, null=True, blank=True)
     marital_status = models.CharField(max_length=1, choices=MARITAL_STATUS, default='S')  # Make sure MARITAL_STATUS is defined
     is_verified = models.BooleanField(default=False)
-    status = models.CharField(max_length=20, choices=STATUS, null=True, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS, default='currently_working')
 
     def __str__(self):
         return f"{self.user.username}'s Profile"
