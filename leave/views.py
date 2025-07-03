@@ -8,6 +8,7 @@ from django.views import View
 from django.views.generic import ListView, CreateView, UpdateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 
+from setup.models import Setup
 from user.models import AuthUser, Profile, WorkingDetail
 from utils.common import point_down_round
 from utils.enums import MARITAL_STATUS
@@ -297,6 +298,7 @@ class LeaveListView(ListView):
             'leave_type': self.request.GET.get('leave_type', ''),
             'leave_types': LeaveType.objects.all(),
             'leave_status_choices': Leave.LEAVE_STATUS,
+            'calendar_type': Setup.get_calendar_type(),
         })
         return context
     

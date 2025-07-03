@@ -399,14 +399,27 @@ class CalendarViewReport(LoginRequiredMixin, ListView):
         else:
             fiscal_year = int(fiscal_year)
 
-        nep_date = nepali_datetime.date.today()
-
         try:
-            bs_month = int(request.GET.get("month")) if request.GET.get("month") else nep_date.month
+            bs_month = int(request.GET.get("month")) if request.GET.get("month") else nepali_datetime.date.today().month
         except ValueError:
-            bs_month = nep_date.month
+            bs_month = nepali_datetime.date.today().month
 
-        bs_year = nep_date.year
+        # Determine bs_year based on fiscal year and selected month
+        if fiscal_year:
+            try:
+                selected_fiscal = FiscalYear.objects.get(id=fiscal_year)
+                start_bs = nepali_datetime.date.from_datetime_date(selected_fiscal.start_date)
+                fiscal_start_bs_year = start_bs.year
+
+                if bs_month >= 4:
+                    bs_year = fiscal_start_bs_year
+                else:
+                    bs_year = fiscal_start_bs_year + 1
+            except FiscalYear.DoesNotExist:
+                bs_year = nepali_datetime.date.today().year
+        else:
+            bs_year = nepali_datetime.date.today().year
+
 
         try:
             days_in_month = nepali_datetime._days_in_month(bs_year, bs_month)
@@ -506,7 +519,7 @@ class CalendarViewReport(LoginRequiredMixin, ListView):
             'selected_department': department_id,
             'selected_employee': str(employee_id),
             'fiscal_year': fiscal_year,
-            'fiscal_years': FiscalYear.objects.filter(status='active'),
+            'fiscal_years': FiscalYear.active_fiscal_year_list(),
             'year': bs_year,
             'selected_month': int(bs_month),
             'days_in_month': range(1, days_in_month + 1),

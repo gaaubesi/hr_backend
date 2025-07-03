@@ -33,8 +33,14 @@
             <form method="get" class="row g-3">
                 <div class="col-md-3">
                     <label class="form-label">Date</label>
-                    <input type="text" class="form-control nep_date" name="date" 
-                        value="{{ selected_date }}" placeholder="YYYY-MM-DD">
+                    {% if calendar_type == 'bs' %}
+                        <input type="text" class="form-control nep_date" name="date" 
+                            value="{{ selected_date }}" placeholder="YYYY-MM-DD">
+                    {% else %}
+                        <input type="date" class="form-control" name="date" 
+                            value="{{ selected_date }}">
+                    {% endif %}
+
                 </div>
 
                 <div class="col-md-3">
@@ -93,8 +99,15 @@
                     </th>
 
                     {% for day in days %}
-                        <th>{{day.0|to_nepali_date}}</th>
+                        <th>
+                            {% if calendar_type == 'bs' %}
+                                {{ day.0|to_nepali_date }}
+                            {% else %}
+                                {{ day.0|date:"Y-m-d" }}
+                            {% endif %}
+                        </th>
                     {% endfor %}
+
                 </tr>
             </thead>
 
@@ -241,16 +254,28 @@
 {% block scripts %}
     <script>
         $(document).ready(function () {
-            const minDateNepali = "{{ min_allowed_date_nep }}";
-            const maxDateNepali = "{{ max_allowed_date_nep }}";
+            const calendarType = "{{ calendar_type }}";
 
-            $(".nep_date").nepaliDatePicker({
-                ndpYear: true,
-                ndpMonth: true,
-                ndpYearCount: 1,
-                disableBefore: minDateNepali,
-                disableAfter: maxDateNepali
-            });
+            if (calendarType === 'bs') {
+                const minDateNepali = "{{ min_allowed_date_nep }}";
+                const maxDateNepali = "{{ max_allowed_date_nep }}";
+
+                $(".nep_date").nepaliDatePicker({
+                    ndpYear: true,
+                    ndpMonth: true,
+                    ndpYearCount: 1,
+                    disableBefore: minDateNepali,
+                    disableAfter: maxDateNepali
+                });
+            } else {
+                const minDate = "{{ min_allowed_eng_date }}";
+                const maxDate = "{{ max_allowed_eng_date }}";
+
+                $("input[type='date']").attr({
+                    "min": minDate,
+                    "max": maxDate
+                });
+            }
 
             $('#departmentDropdown').on('change', function () {
                 var departmentId = $(this).val();

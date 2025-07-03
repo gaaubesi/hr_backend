@@ -7,6 +7,7 @@ from django.views.generic import ListView, CreateView, UpdateView
 
 from department.models import Department
 from leave.models import Leave, LeaveType
+from setup.models import Setup
 from user.models import AuthUser
 from .models import Roster, RosterDetail, Shift
 from .forms import ShiftForm
@@ -119,22 +120,34 @@ class RosterListView(ListView):
         employee_id = self.request.GET.get("employee")
         employee_id = str(employee_id) if employee_id else None
 
-        if input_date:
-            try:
-                date = nepali_str_to_english(input_date)
-            except Exception:
+        calendar_type = Setup.get_calendar_type()
+        if calendar_type == 'bs':
+            if input_date:
+                try:
+                    date = nepali_str_to_english(input_date)
+                except Exception:
+                    date = timezone.now().date()
+            else:
                 date = timezone.now().date()
+                input_date = english_to_nepali(date)
         else:
-            date = timezone.now().date()
-            input_date = english_to_nepali(date)
+            if input_date:
+                try:
+                    date = datetime.strptime(input_date, '%Y-%m-%d').date()
+                except Exception:
+                    date = timezone.now().date()
+            else:
+                date = timezone.now().date()
+                input_date = date.strftime('%Y-%m-%d')
 
         week_info = get_week_days(date)
 
         # Calculate max allowed date (end of next week)
         current_week_info = get_week_days(timezone.now().date())
         min_allowed_eng_date = current_week_info[0][0]
-        min_allowed_nep = english_to_nepali(min_allowed_eng_date)
         max_allowed_eng_date = current_week_info[-1][0] + timedelta(days=7)
+
+        min_allowed_nep = english_to_nepali(min_allowed_eng_date)
         max_allowed_nep = english_to_nepali(max_allowed_eng_date)
 
 
@@ -170,12 +183,17 @@ class RosterListView(ListView):
             'team_member_count': filtered_users_qs.count(),
             'all_shifts': Shift.objects.all().order_by('title'),
             'days': week_info,
+            'min_allowed_eng_date': min_allowed_eng_date.strftime('%Y-%m-%d'),
+            'max_allowed_eng_date': max_allowed_eng_date.strftime('%Y-%m-%d'),
+
             'min_allowed_date_nep': min_allowed_nep,
             'max_allowed_date_nep': max_allowed_nep,
+
             'selected_date': input_date,
             'selected_department': department_id,
             'selected_employee': employee_id,
             'roster_map': roster_map,
+            'calendar_type': calendar_type,
         })
         return context
 
