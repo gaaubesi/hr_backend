@@ -464,9 +464,10 @@ class EmployeeEditView(UpdateView):
                     detail.account_holder = user
                     detail.save()
                 messages.success(request, "Bank details saved successfully.")
-                return redirect(f"{reverse('user:employee_edit', kwargs={'pk': user.id})}?tab=bank_detail")
-            except Exception as e:
-                messages.error(request, f"Error saving bank details: {str(e)}")
+            except Exception as e:  
+                messages.error(request, f"Error updating bank detail: {str(e)}")
+    
+            return redirect(f"{reverse('user:employee_edit', kwargs={'pk': user.id})}?tab=bank_detail")
 
         context = {
             'user_form': UserForm(instance=user),

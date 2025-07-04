@@ -162,7 +162,7 @@
                         {% csrf_token %}
                         <input type="hidden" name="form_section" value="profile">
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-6">  
                                 {{ user_form|crispy }}
                             </div>
                             <div class="col-md-6">
@@ -1137,7 +1137,7 @@
                         formData.append(`branch-${fieldIndex}`, branch);
                         formData.append(`account_number-${fieldIndex}`, accountNumber);
                         formData.append(`bank_username-${fieldIndex}`, bankUsername);
-                        formData.append(`is_primary-${fieldIndex}`, isPrimary);
+                        formData.append(`is_primary-${fieldIndex}`, isPrimary ? 'on' : '');
                     }
                 });
                 
@@ -1158,39 +1158,15 @@
                     body: formData
                 })
                 .then(response => {
-                    if (response.ok) {
-                        // Show success message before reload
-                        const successMessage = document.createElement('div');
-                        successMessage.className = 'alert alert-success alert-dismissible fade show position-fixed';
-                        successMessage.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-                        successMessage.innerHTML = `
-                            <i class="fas fa-check-circle me-2"></i>
-                            Bank details saved successfully!
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        `;
-                        document.body.appendChild(successMessage);
-                        
-                        // Auto-dismiss after 3 seconds
-                        setTimeout(() => {
-                            if (successMessage.parentNode) {
-                                successMessage.remove();
-                            }
-                        }, 3000);
-                        
-                        // Reload the page to show updated data
-                        setTimeout(() => {
-                            window.location.reload();
-                        }, 1000);
+                    if (response.redirected) {
+                        window.location.href = response.url; // follow backend redirect
                     } else {
-                        throw new Error('Network response was not ok');
+                        window.location.reload(); // reload to show backend messages
                     }
                 })
                 .catch(error => {
-                    console.error('Error:', error);
-                    alert('An error occurred while saving bank details.');
-                    // Reset button state
-                    submitButton.innerHTML = originalText;
-                    submitButton.disabled = false;
+                    // On error, reload to show backend error messages
+                    window.location.reload();
                 });
             });
         }
