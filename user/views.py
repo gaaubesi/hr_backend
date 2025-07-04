@@ -343,19 +343,8 @@ class EmployeeEditView(UpdateView):
                 messages.success(request, "Bank details saved successfully.")
             except Exception as e:  
                 messages.error(request, f"Error updating bank detail: {str(e)}")
-    
-            return redirect(f"{reverse('user:employee_edit', kwargs={'pk': user.id})}?tab=bank_detail")
-
-        context = {
-            'user_form': UserForm(instance=user),
-            'profile_form': ProfileForm(instance=profile),
-            'working_form': WorkingDetailForm(instance=working_detail),
-            'profile': profile,
-            'action': 'Update',
-            'active_tab': 'bank_detail'
-        }
-        context.update(self.get_common_context(user, profile))
-        return render(request, self.template_name, context)
+        
+        return redirect(f"{reverse('user:employee_edit', kwargs={'pk': user.id})}?tab=bank_detail")
 
 class EmployeeDeleteView(View):
     model = AuthUser
@@ -402,7 +391,7 @@ class EmployeeDetailView(View):
         employee = get_object_or_404(AuthUser, pk=pk, is_active=True)
         profile = getattr(employee, 'profile', None)
         working_detail = getattr(employee, 'working_detail', None)
-        documents = Document.objects.filter(user=employee)
+        documents = Document.objects.filter(user=employee).order_by('-uploaded_at')
         payouts = Payout.objects.filter(user=employee)
         bank_details = BankDetail.objects.filter(account_holder=employee).order_by('-id')
         calendar_type = Setup.get_calendar_type()

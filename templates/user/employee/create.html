@@ -1110,8 +1110,6 @@
         const bankDetailForm = document.getElementById('bank-detail-form');
         if (bankDetailForm) {
             bankDetailForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
                 // Check if any new bank detail is being marked as primary
                 const newPrimaryCheckboxes = document.querySelectorAll('input[name^="is_primary-"]:checked');
                 const existingPrimaryBankDetails = document.querySelectorAll('.card-body .badge.bg-primary');
@@ -1119,16 +1117,12 @@
                 if (newPrimaryCheckboxes.length > 0 && existingPrimaryBankDetails.length > 0) {
                     const confirmMessage = `You are marking new bank detail as primary. This will unmark existing primary bank detail. Do you want to continue?`;
                     if (!confirm(confirmMessage)) {
-                        return;
+                        e.preventDefault();
+                        return false;
                     }
                 }
                 
-                // Collect all form data
-                const formData = new FormData();
-                formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
-                formData.append('form_section', 'bank_detail');
-                
-                // Get all bank detail forms
+                // Validate that at least one bank detail has required fields
                 const bankDetailFormItems = document.querySelectorAll('.bank-detail-form-item');
                 let hasValidData = false;
                 
@@ -1136,63 +1130,28 @@
                     const bankNameField = formItem.querySelector('input[name^="bank_name-"]');
                     const branchField = formItem.querySelector('input[name^="branch-"]');
                     const accountNumberField = formItem.querySelector('input[name^="account_number-"]');
-                    const bankUsernameField = formItem.querySelector('input[name^="bank_username-"]');
-                    const isPrimaryField = formItem.querySelector('input[name^="is_primary-"]');
                     
                     const bankName = bankNameField.value.trim();
                     const branch = branchField.value.trim();
                     const accountNumber = accountNumberField.value.trim();
-                    const bankUsername = bankUsernameField.value.trim();
-                    const isPrimary = isPrimaryField.checked;
-                    
-                    // Extract the actual field index from the field name
-                    const fieldIndex = bankNameField.name.match(/-(\d+)$/)[1];
                     
                     // Only include if at least required fields are filled
                     if (bankName && branch && accountNumber) {
                         hasValidData = true;
-                        formData.append(`bank_name-${fieldIndex}`, bankName);
-                        formData.append(`branch-${fieldIndex}`, branch);
-                        formData.append(`account_number-${fieldIndex}`, accountNumber);
-                        formData.append(`bank_username-${fieldIndex}`, bankUsername);
-                        formData.append(`is_primary-${fieldIndex}`, isPrimary ? 'on' : '');
                     }
                 });
                 
                 if (!hasValidData) {
                     alert('Please fill in at least one bank detail with required fields (Bank Name, Branch, Account Number).');
-                    return;
+                    e.preventDefault();
+                    return false;
                 }
                 
-                // Show loading state
-                const submitButton = bankDetailForm.querySelector('button[type="submit"]');
-                const originalText = submitButton.innerHTML;
-                submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-                submitButton.disabled = true;
-                
-                // Submit the form
-                fetch(window.location.href, {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => {
-                    if (response.redirected) {
-                        window.location.href = response.url; // follow backend redirect
-                    } else {
-                        window.location.reload(); // reload to show backend messages
-                    }
-                })
-                .catch(error => {
-                    // On error, reload to show backend error messages
-                    window.location.reload();
-                });
             });
         }
 
         // Function to refresh the display of existing bank details
         function refreshBankDetailsDisplay() {
-            // This function can be called after successful form submission
-            // to update the display without a full page reload
             const bankDetailsContainer = document.querySelector('.card-body .row');
             if (bankDetailsContainer) {
                 // Trigger a small animation to indicate update
