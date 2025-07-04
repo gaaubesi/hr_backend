@@ -133,7 +133,7 @@ class EmployeeEditView(UpdateView):
         return user, profile, working_detail
 
     def get_common_context(self, user, profile):
-        documents = Document.objects.filter(user=user)
+        documents = Document.objects.filter(user=user).order_by('-uploaded_at')
         payouts = Payout.objects.filter(user=user)
         bank_details = BankDetail.objects.filter(account_holder=user).order_by('-id')
         uploaded_document_types = documents.values_list('document_type', flat=True)
