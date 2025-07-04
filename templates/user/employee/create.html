@@ -105,19 +105,22 @@
                    <h5 class="mb-2">
                         {{ user_form.first_name.value }} {{ user_form.last_name.value }}
 
-                        {% if profile_form.instance.is_verified %}
-                            <i class="fas fa-square-check text-success ms-1" title="Verified"></i>
-                        {% else %}
-                            <i class="fas fa-square-xmark text-danger ms-1" title="Not Verified"></i>
-                        {% endif %}
+                        {% if action == 'update' %}
+                            {% if profile_form.instance.is_verified %}
+                                <i class="fas fa-square-check text-success ms-1" title="Verified"></i>
+                            {% else %}
+                                <i class="fas fa-square-xmark text-danger ms-1" title="Not Verified"></i>
+                            {% endif %}
 
-                        {% if profile_form.instance.status == 'currently_working' %}
-                            <i class="fas fa-briefcase text-success ms-1" title="Currently Working"></i>
-                        {% elif profile_form.instance.status == 'not_working' %}
-                            <i class="fas fa-briefcase text-danger ms-1" title="Not Working"></i>
-                        {% elif profile_form.instance.status == 'deactivated' %}
-                            <i class="fas fa-circle text-danger ms-1" title="Deactivated"></i>
+                            {% if profile_form.instance.status == 'currently_working' %}
+                                <i class="fas fa-briefcase text-success ms-1" title="Currently Working"></i>
+                            {% elif profile_form.instance.status == 'not_working' %}
+                                <i class="fas fa-briefcase text-danger ms-1" title="Not Working"></i>
+                            {% elif profile_form.instance.status == 'deactivated' %}
+                                <i class="fas fa-circle text-danger ms-1" title="Deactivated"></i>
+                            {% endif %}
                         {% endif %}
+                        
                     </h5>
 
                     <p class="text-muted mb-1"><i class="fa-solid fa-envelope me-2"></i>{{ user_form.email.value }}</p>
