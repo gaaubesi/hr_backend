@@ -105,19 +105,22 @@
                    <h5 class="mb-2">
                         {{ user_form.first_name.value }} {{ user_form.last_name.value }}
 
-                        {% if profile_form.instance.is_verified %}
-                            <i class="fas fa-square-check text-success ms-1" title="Verified"></i>
-                        {% else %}
-                            <i class="fas fa-square-xmark text-danger ms-1" title="Not Verified"></i>
-                        {% endif %}
+                        {% if action == 'Update' %}
+                            {% if profile_form.instance.is_verified %}
+                                <i class="fas fa-square-check text-success ms-1" title="Verified"></i>
+                            {% else %}
+                                <i class="fas fa-square-xmark text-danger ms-1" title="Not Verified"></i>
+                            {% endif %}
 
-                        {% if profile_form.instance.status == 'currently_working' %}
-                            <i class="fas fa-briefcase text-success ms-1" title="Currently Working"></i>
-                        {% elif profile_form.instance.status == 'not_working' %}
-                            <i class="fas fa-briefcase text-danger ms-1" title="Not Working"></i>
-                        {% elif profile_form.instance.status == 'deactivated' %}
-                            <i class="fas fa-circle text-danger ms-1" title="Deactivated"></i>
+                            {% if profile_form.instance.status == 'currently_working' %}
+                                <i class="fas fa-briefcase text-success ms-1" title="Currently Working"></i>
+                            {% elif profile_form.instance.status == 'not_working' %}
+                                <i class="fas fa-briefcase text-danger ms-1" title="Not Working"></i>
+                            {% elif profile_form.instance.status == 'deactivated' %}
+                                <i class="fas fa-circle text-danger ms-1" title="Deactivated"></i>
+                            {% endif %}
                         {% endif %}
+                        
                     </h5>
 
                     <p class="text-muted mb-1"><i class="fa-solid fa-envelope me-2"></i>{{ user_form.email.value }}</p>
@@ -159,7 +162,7 @@
                         {% csrf_token %}
                         <input type="hidden" name="form_section" value="profile">
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-6">  
                                 {{ user_form|crispy }}
                             </div>
                             <div class="col-md-6">
@@ -214,8 +217,8 @@
                                                 <input type="file" name="document_file-0" id="id_document_file-0" class="form-control" required>
                                             </div>
                                             <div class="col-md-2 px-2">
-                                                <label for="id_document_number-0">Document Number <span class="asteriskField">*</span></label>
-                                                <input type="text" name="document_number-0" id="id_document_number-0" class="form-control" placeholder="Enter doc number" required> 
+                                                <label for="id_document_number-0">Document Number</label>
+                                                <input type="text" name="document_number-0" id="id_document_number-0" class="form-control" placeholder="Enter doc number"> 
                                             </div>
                                             <div class="col-md-3 px-2">
                                                 <label for="id_issue_date-0">Issue Date</label>
@@ -245,15 +248,6 @@
                             <a href="{% url 'user:employee_list' %}" class="btn btn-warning">Cancel</a>
                         </div>
                     </form>
-
-                    <!-- Districts data for JavaScript -->
-                    <script type="application/json" id="districts-data">
-                        [
-                            {% for district in document_form.fields.issue_body.queryset %}
-                                {"id": "{{ district.id }}", "name": "{{ district.name }}"}{% if not forloop.last %},{% endif %}
-                            {% endfor %}
-                        ]
-                    </script>
 
                     <!-- Display existing documents -->
                     <div class="card mt-4">
@@ -375,7 +369,7 @@
                                                         <small class="text-muted">Current file: {{ document.document_file.name }}</small>
                                                     </div>
                                                     <div class="mb-3">
-                                                        <label for="edit_document_number_{{ document.id }}" class="form-label">Document Number<span class="asteriskField">*</span></label>
+                                                        <label for="edit_document_number_{{ document.id }}" class="form-label">Document Number</label>
                                                         <input type="text" name="document_number" id="edit_document_number_{{ document.id }}" class="form-control" placeholder="Enter document number" value="{{ document.document_number|default:'' }}">
                                                     </div>
                                                     <div class="mb-3">
@@ -679,15 +673,28 @@
                 function toggleEditIssueFields() {
                     // Hide document number, issue date and issuing authority fields by default
                     editDocumentNumberField.closest('.mb-3').hide();
+                    editDocumentNumberField.removeAttribute('required');
                     editIssueDateField.closest('.mb-3').hide();
                     editIssueBodyField.closest('.mb-3').hide();
+
+                    // Remove asterisk if it exists
+                    const asterisk = editDocumentNumberLabel.find('.asteriskField');
+                    if (asterisk.length) {
+                        asterisk.remove();
+                    }
 
                     // Show for specific document types
                     const docType = editDocumentTypeSelect.val();
                     if (docType === 'citizenship_front' || docType === 'citizenship_back' || docType === 'pan_card') {
                         editDocumentNumberField.closest('.mb-3').show();
+                        editDocumentNumberField.attr('required', 'required');
                         editIssueDateField.closest('.mb-3').show();
                         editIssueBodyField.closest('.mb-3').show();
+                        
+                        // Add asterisk if it doesn't exist
+                        if (!editDocumentNumberLabel.find('.asteriskField').length) {
+                            editDocumentNumberLabel.append(' <span class="asteriskField">*</span>');
+                        }
                     }
                 }
 
@@ -743,6 +750,7 @@
             // Hide document number, issue date and issuing authority fields by default
             if (documentNumberField) {
                 documentNumberField.closest('.col-md-2').style.display = 'none';
+                documentNumberField.removeAttribute('required');
             }
             if (issueDateField) {
                 issueDateField.closest('.col-md-3').style.display = 'none';
@@ -752,6 +760,11 @@
             }
             if (documentNumberLabel) {
                 documentNumberLabel.closest('.col-md-2').style.display = 'none';
+                // Remove asterisk if it exists
+                const asterisk = documentNumberLabel.querySelector('.asteriskField');
+                if (asterisk) {
+                    asterisk.remove();
+                }
             }
             if (issueDateLabel) {
                 issueDateLabel.closest('.col-md-3').style.display = 'none';
@@ -764,6 +777,7 @@
             if (documentTypeSelect.value === 'citizenship_front' || documentTypeSelect.value === 'citizenship_back' || documentTypeSelect.value === 'pan_card') {
                 if (documentNumberField) {
                     documentNumberField.closest('.col-md-2').style.display = 'block';
+                    documentNumberField.setAttribute('required', 'required');
                 }
                 if (issueDateField) {
                     issueDateField.closest('.col-md-3').style.display = 'block';
@@ -773,6 +787,10 @@
                 }
                 if (documentNumberLabel) {
                     documentNumberLabel.closest('.col-md-2').style.display = 'block';
+                    // Add asterisk if it doesn't exist
+                    if (!documentNumberLabel.querySelector('.asteriskField')) {
+                        documentNumberLabel.innerHTML += ' <span class="asteriskField">*</span>';
+                    }
                 }
                 if (issueDateLabel) {
                     issueDateLabel.closest('.col-md-3').style.display = 'block';
@@ -819,7 +837,7 @@
                 newForm.querySelectorAll('select').forEach(select => {
                     select.selectedIndex = 0;
                     updateDocumentTypeOptions(select);
-                });s
+                });
 
                 // Remove any select2 containers that may have been cloned
                 newForm.querySelectorAll('.select2-container').forEach(el => el.remove());
@@ -830,14 +848,11 @@
                     if ($(issueBodySelect).hasClass('select2-hidden-accessible')) {
                         $(issueBodySelect).select2('destroy');
                     }
-                    issueBodySelect.innerHTML = '<option value="">Select Issuing Authority</option>';
-                    const districtsData = JSON.parse(document.getElementById('districts-data').textContent);
-                    districtsData.forEach(district => {
-                        const option = document.createElement('option');
-                        option.value = district.id;
-                        option.textContent = district.name;
-                        issueBodySelect.appendChild(option);
-                    });
+                    // Get the original issue_body select to copy its options
+                    const originalIssueBodySelect = document.querySelector('select[name="issue_body-0"]');
+                    if (originalIssueBodySelect) {
+                        issueBodySelect.innerHTML = originalIssueBodySelect.innerHTML;
+                    }
                 }
 
                 // Add remove button if not the first form
@@ -872,6 +887,12 @@
                     });
                     // Initialize on creation
                     toggleIssueFields(newDocumentTypeSelect);
+                }
+
+                // Initialize Nepali date picker for the new issue date field
+                const newIssueDateField = newForm.querySelector('input[name^="issue_date-"]');
+                if (newIssueDateField) {
+                    newIssueDateField.nepaliDatePicker();
                 }
             });
         }
@@ -1089,8 +1110,6 @@
         const bankDetailForm = document.getElementById('bank-detail-form');
         if (bankDetailForm) {
             bankDetailForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
                 // Check if any new bank detail is being marked as primary
                 const newPrimaryCheckboxes = document.querySelectorAll('input[name^="is_primary-"]:checked');
                 const existingPrimaryBankDetails = document.querySelectorAll('.card-body .badge.bg-primary');
@@ -1098,16 +1117,12 @@
                 if (newPrimaryCheckboxes.length > 0 && existingPrimaryBankDetails.length > 0) {
                     const confirmMessage = `You are marking new bank detail as primary. This will unmark existing primary bank detail. Do you want to continue?`;
                     if (!confirm(confirmMessage)) {
-                        return;
+                        e.preventDefault();
+                        return false;
                     }
                 }
                 
-                // Collect all form data
-                const formData = new FormData();
-                formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
-                formData.append('form_section', 'bank_detail');
-                
-                // Get all bank detail forms
+                // Validate that at least one bank detail has required fields
                 const bankDetailFormItems = document.querySelectorAll('.bank-detail-form-item');
                 let hasValidData = false;
                 
@@ -1115,87 +1130,28 @@
                     const bankNameField = formItem.querySelector('input[name^="bank_name-"]');
                     const branchField = formItem.querySelector('input[name^="branch-"]');
                     const accountNumberField = formItem.querySelector('input[name^="account_number-"]');
-                    const bankUsernameField = formItem.querySelector('input[name^="bank_username-"]');
-                    const isPrimaryField = formItem.querySelector('input[name^="is_primary-"]');
                     
                     const bankName = bankNameField.value.trim();
                     const branch = branchField.value.trim();
                     const accountNumber = accountNumberField.value.trim();
-                    const bankUsername = bankUsernameField.value.trim();
-                    const isPrimary = isPrimaryField.checked;
-                    
-                    // Extract the actual field index from the field name
-                    const fieldIndex = bankNameField.name.match(/-(\d+)$/)[1];
                     
                     // Only include if at least required fields are filled
                     if (bankName && branch && accountNumber) {
                         hasValidData = true;
-                        formData.append(`bank_name-${fieldIndex}`, bankName);
-                        formData.append(`branch-${fieldIndex}`, branch);
-                        formData.append(`account_number-${fieldIndex}`, accountNumber);
-                        formData.append(`bank_username-${fieldIndex}`, bankUsername);
-                        formData.append(`is_primary-${fieldIndex}`, isPrimary);
                     }
                 });
                 
                 if (!hasValidData) {
                     alert('Please fill in at least one bank detail with required fields (Bank Name, Branch, Account Number).');
-                    return;
+                    e.preventDefault();
+                    return false;
                 }
                 
-                // Show loading state
-                const submitButton = bankDetailForm.querySelector('button[type="submit"]');
-                const originalText = submitButton.innerHTML;
-                submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-                submitButton.disabled = true;
-                
-                // Submit the form
-                fetch(window.location.href, {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => {
-                    if (response.ok) {
-                        // Show success message before reload
-                        const successMessage = document.createElement('div');
-                        successMessage.className = 'alert alert-success alert-dismissible fade show position-fixed';
-                        successMessage.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-                        successMessage.innerHTML = `
-                            <i class="fas fa-check-circle me-2"></i>
-                            Bank details saved successfully!
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        `;
-                        document.body.appendChild(successMessage);
-                        
-                        // Auto-dismiss after 3 seconds
-                        setTimeout(() => {
-                            if (successMessage.parentNode) {
-                                successMessage.remove();
-                            }
-                        }, 3000);
-                        
-                        // Reload the page to show updated data
-                        setTimeout(() => {
-                            window.location.reload();
-                        }, 1000);
-                    } else {
-                        throw new Error('Network response was not ok');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('An error occurred while saving bank details.');
-                    // Reset button state
-                    submitButton.innerHTML = originalText;
-                    submitButton.disabled = false;
-                });
             });
         }
 
         // Function to refresh the display of existing bank details
         function refreshBankDetailsDisplay() {
-            // This function can be called after successful form submission
-            // to update the display without a full page reload
             const bankDetailsContainer = document.querySelector('.card-body .row');
             if (bankDetailsContainer) {
                 // Trigger a small animation to indicate update

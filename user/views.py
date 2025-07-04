@@ -84,10 +84,19 @@ class EmployeeCreateView(View):
     def get(self, request):
         context = get_common_context(action='Create')
         return render(request, self.template_name, context)
-
+    
     def post(self, request):
         section = request.POST.get('form_section')
-        return getattr(self, f'handle_{section}_section')(request)
+        if section == 'profile':
+            return self.handle_profile_section(request)
+        else:
+            # For other sections, redirect to edit view
+            user_id = request.session.get('new_user_id')
+            if user_id:
+                return redirect(f"{reverse('user:employee_edit', kwargs={'pk': user_id})}?tab={section}")
+            else:
+                messages.error(request, "Please complete profile information first.")
+                return redirect('user:employee_create')
 
     def handle_profile_section(self, request):
         user_form = UserForm(request.POST, prefix='user')
@@ -106,144 +115,12 @@ class EmployeeCreateView(View):
                     profile.save()
 
                     request.session['new_user_id'] = user.id
-                    messages.success(request, "Profile details saved successfully.")
+                    messages.success(request, "Profile details created successfully.")
                     return redirect('user:employee_list')
             except Exception as e:
                 messages.error(request, f"Error creating employee: {str(e)}")
         context = get_common_context(user_form=user_form, profile_form=profile_form, active_tab='profile')
         return render(request, self.template_name, context)
-
-    def handle_document_section(self, request):
-        user_id = request.session.get('new_user_id')
-        if not user_id:
-            messages.error(request, "Please complete profile information first.")
-            return redirect('user:employee_create')
-
-        user = get_object_or_404(AuthUser, id=user_id)
-        documents = []
-
-        for key in request.FILES:
-            if key.startswith('document_file-'):
-                index = key.split('-')[1]
-                doc_type = request.POST.get(f'document_type-{index}')
-                doc_file = request.FILES.get(f'document_file-{index}')
-                doc_number = request.POST.get(f'document_number-{index}')
-                issue_date = request.POST.get(f'issue_date-{index}')
-                issue_body = request.POST.get(f'issue_body-{index}')
-
-                if doc_type and doc_file:
-                    try:
-                        doc = Document(
-                            user=user,
-                            document_type=doc_type,
-                            document_file=doc_file
-                        )
-                        if doc_type != 'resume':
-                            doc.document_number = doc_number if doc_number else None
-                            doc.issue_date = nepali_str_to_english(issue_date) if issue_date else None
-                            doc.issue_body = District.objects.get(id=issue_body) if issue_body else None
-                        doc.save()
-                        documents.append(doc)
-                    except Exception as e:
-                        messages.error(request, f"Error uploading {doc_type}: {str(e)}")
-
-        if documents:
-            messages.success(request, f"{len(documents)} document(s) uploaded successfully.")
-        return redirect(f"{reverse('user:employee_create')}?tab=document")
-
-    def handle_payout_section(self, request):
-        user_id = request.session.get('new_user_id')
-        if not user_id:
-            messages.error(request, "Please complete profile information first.")
-            return redirect('user:employee_create')
-
-        user = get_object_or_404(AuthUser, id=user_id)
-        payout_interval_id = request.POST.get('payout_interval')
-        existing_payout = Payout.objects.filter(user=user, payout_interval_id=payout_interval_id).first() if payout_interval_id else None
-
-        payout_form = PayoutForm(request.POST, instance=existing_payout)
-
-        if payout_form.is_valid():
-            try:
-                payout = payout_form.save(commit=False)
-                payout.user = user
-                payout.created_by = request.user
-                payout.save()
-                messages.success(request, "Payout details saved successfully.")
-            except Exception as e:
-                messages.error(request, f"Error saving payout: {str(e)}")
-        else:
-            context = get_common_context(payout_form=payout_form, active_tab='payout')
-            return render(request, self.template_name, context)
-
-        return redirect(f"{reverse('user:employee_create')}?tab=payout")
-
-    def handle_bank_detail_section(self, request):
-        user_id = request.session.get('new_user_id')
-        if not user_id:
-            messages.error(request, "Please complete profile information first.")
-            return redirect('user:employee_create')
-
-        user = get_object_or_404(AuthUser, id=user_id)
-        
-        # Get all bank detail forms from the request
-        bank_detail_forms = []
-        index = 0
-        
-        while True:
-            bank_name = request.POST.get(f'bank_name-{index}')
-            branch = request.POST.get(f'branch-{index}')
-            account_number = request.POST.get(f'account_number-{index}')
-            
-            if not bank_name or not branch or not account_number:
-                break
-                
-            bank_username = request.POST.get(f'bank_username-{index}', '')
-            is_primary = request.POST.get(f'is_primary-{index}') == 'on'
-            
-            # Create form data for this bank detail
-            form_data = {
-                'bank_name': bank_name,
-                'bank_username': bank_username,
-                'branch': branch,
-                'account_number': account_number,
-                'is_primary': is_primary,
-            }
-            
-            bank_detail_form = BankDetailForm(form_data)
-            bank_detail_forms.append(bank_detail_form)
-            index += 1
-        
-        if not bank_detail_forms:
-            messages.error(request, "Please provide at least one bank detail.")
-            context = get_common_context(active_tab='bank_detail')
-            return render(request, self.template_name, context)
-        
-        # Validate all forms
-        all_valid = all(form.is_valid() for form in bank_detail_forms)
-        
-        if all_valid:
-            try:
-                with transaction.atomic():
-                    # If any form has is_primary=True, unmark all existing primary bank details
-                    has_primary = any(form.cleaned_data.get('is_primary') for form in bank_detail_forms)
-                    if has_primary:
-                        BankDetail.objects.filter(account_holder=user, is_primary=True).update(is_primary=False)
-                    
-                    # Save all bank details
-                    for form in bank_detail_forms:
-                        bank_detail = form.save(commit=False)
-                        bank_detail.account_holder = user
-                        bank_detail.save()
-                    
-                    messages.success(request, "Bank details saved successfully.")
-            except Exception as e:
-                messages.error(request, f"Error saving bank details: {str(e)}")
-        else:
-            # Re-render with errors
-            context = get_common_context(active_tab='bank_detail')
-            return render(request, self.template_name, context)
-        return redirect(f"{reverse('user:employee_create')}?tab=bank_detail")
 
 
 class EmployeeEditView(UpdateView):
@@ -256,7 +133,7 @@ class EmployeeEditView(UpdateView):
         return user, profile, working_detail
 
     def get_common_context(self, user, profile):
-        documents = Document.objects.filter(user=user)
+        documents = Document.objects.filter(user=user).order_by('-uploaded_at')
         payouts = Payout.objects.filter(user=user)
         bank_details = BankDetail.objects.filter(account_holder=user).order_by('-id')
         uploaded_document_types = documents.values_list('document_type', flat=True)
@@ -464,20 +341,10 @@ class EmployeeEditView(UpdateView):
                     detail.account_holder = user
                     detail.save()
                 messages.success(request, "Bank details saved successfully.")
-                return redirect(f"{reverse('user:employee_edit', kwargs={'pk': user.id})}?tab=bank_detail")
-            except Exception as e:
-                messages.error(request, f"Error saving bank details: {str(e)}")
-
-        context = {
-            'user_form': UserForm(instance=user),
-            'profile_form': ProfileForm(instance=profile),
-            'working_form': WorkingDetailForm(instance=working_detail),
-            'profile': profile,
-            'action': 'Update',
-            'active_tab': 'bank_detail'
-        }
-        context.update(self.get_common_context(user, profile))
-        return render(request, self.template_name, context)
+            except Exception as e:  
+                messages.error(request, f"Error updating bank detail: {str(e)}")
+        
+        return redirect(f"{reverse('user:employee_edit', kwargs={'pk': user.id})}?tab=bank_detail")
 
 class EmployeeDeleteView(View):
     model = AuthUser
@@ -524,7 +391,7 @@ class EmployeeDetailView(View):
         employee = get_object_or_404(AuthUser, pk=pk, is_active=True)
         profile = getattr(employee, 'profile', None)
         working_detail = getattr(employee, 'working_detail', None)
-        documents = Document.objects.filter(user=employee)
+        documents = Document.objects.filter(user=employee).order_by('-uploaded_at')
         payouts = Payout.objects.filter(user=employee)
         bank_details = BankDetail.objects.filter(account_holder=employee).order_by('-id')
         calendar_type = Setup.get_calendar_type()
