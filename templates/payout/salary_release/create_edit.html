@@ -21,9 +21,30 @@
             <div class="card-body">
                 <form method="POST">
                     {% csrf_token %}
-                    {{ form|crispy }}
-                    
-                    <div class="row justify-content-center">
+                    <div class="row">
+                        <!-- Left Column -->
+                        <div class="col-md-6">
+                            <h6 class="text-primary fw-bold mb-3">Team & Period</h6>
+                            {{ form.employee|as_crispy_field }}
+                            {{ form.salary_type|as_crispy_field }}
+                            {{ form.fiscal_year|as_crispy_field }}
+                            {{ form.month|as_crispy_field }}
+                            {{ form.start_date|as_crispy_field }}
+                            {{ form.end_date|as_crispy_field }}
+                        </div>
+
+                        <!-- Right Column -->
+                        <div class="col-md-6">
+                            <h6 class="text-success fw-bold mb-3">Salary Details</h6>
+                            {{ form.amount|as_crispy_field }}
+                            {{ form.no_of_product|as_crispy_field }}
+                            {{ form.rate|as_crispy_field }}
+                            {{ form.tax|as_crispy_field }}
+                            {{ form.net_amount|as_crispy_field }}
+                        </div>
+                    </div>
+
+                    <div class="row justify-content-center mt-4">
                         <div class="col-sm-6 text-center">
                             <button type="submit" class="btn btn-success">{{ action }}</button>
                             <a href="{% url 'payout:salary_release_list' %}" class="btn btn-warning">Cancel</a>
@@ -34,4 +55,83 @@
         </div>
     </div>
 </div>
-{% endblock content %} 
+{% endblock content %}
+
+{% block scripts %}
+    <script>
+        {% comment %} // Clears end date when start date changes
+        $('#id_start_date').on('change', function () {
+            $('#id_end_date').val('');  // Clear end date
+        });
+
+        // Updates amount when end date changes
+        $('#id_end_date').on('change', function () {
+            updateAmountFromPayout();
+        }); {% endcomment %}
+
+        // Recalculate dates when fiscal year or month changes, and update amount
+        function updateStartEndDates() {
+            const fiscalYearId = $('#id_fiscal_year').val();
+            const month = $('#id_month').val();
+
+            if (fiscalYearId && month) {
+                $.ajax({
+                    url: "{% url 'payout:get_start_end_date_range' %}",
+                    data: {
+                        'fiscal_year': fiscalYearId,
+                        'month': month
+                    },
+                    success: function(data) {
+                        $('#id_start_date').val(data.start_date);
+                        $('#id_end_date').val(data.end_date);
+
+                        // Call amount calculation after setting new dates
+                        updateAmountFromPayout();
+                    },
+                    error: function(xhr) {
+                        alert("Could not load Nepali date range. Please check inputs.");
+                    }
+                });
+            }
+        }
+
+        // Core amount updater
+        function updateAmountFromPayout() {
+            const employee = $('#id_employee').val();
+            const startDate = $('#id_start_date').val();
+            const endDate = $('#id_end_date').val();
+
+            if (employee && startDate && endDate) {
+                $.ajax({
+                    url: "{% url 'payout:calculate_payout_amount' %}",
+                    data: {
+                        'employee': employee,
+                        'start_date': startDate,
+                        'end_date': endDate
+                    },
+                    success: function(data) {
+                        if (data.calculated_amount !== undefined) {
+                            $('#id_amount').val(data.calculated_amount);
+                        } else {
+                            $('#id_amount').val(''); // Clear amount if undefined
+                        }
+                    },
+                    error: function(xhr) {
+                        $('#id_amount').val('');  // Clear on error (e.g., no payout)
+                        console.warn("Amount calc error:", xhr.responseJSON?.error || "Unknown");
+                    }
+                });
+            }
+        }
+
+        $(document).ready(function () {
+            $('#id_fiscal_year, #id_month').on('change', updateStartEndDates);
+            $('#id_employee').on('change', updateAmountFromPayout); // Also recalc on team member change
+
+            // Optional: also prevent click if needed
+            $('.readonly-input').on('mousedown', function (e) {
+                e.preventDefault();
+            });
+        });
+    </script>
+{% endblock scripts %}

@@ -1,3 +1,5 @@
+import datetime
+from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -6,9 +8,11 @@ from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 
+from fiscal_year.models import FiscalYear
 from payout.forms import SalaryReleaseForm, SalaryTypeForm, PayoutIntervalForm
 # from setup.models import Setup
-from user.models import AuthUser
+from user.models import AuthUser, Payout
+from utils.date_converter import english_to_nepali, nepali_str_to_english
 
 from .models import SalaryRelease, SalaryType, PayoutInterval
 
@@ -174,6 +178,74 @@ class SalaryReleaseDeleteView(LoginRequiredMixin, DeleteView):
         self.object.delete()
         messages.success(request, "Salary release deleted successfully.")
         return redirect(self.success_url)
+    
+
+def GetStartEndDateRange(request):
+    fiscal_year_id = request.GET.get('fiscal_year')
+    month = request.GET.get('month')
+
+    try:
+        fiscal_year = FiscalYear.objects.get(pk=fiscal_year_id)
+        month = int(month)
+
+        nepali_range = []
+        eng_fiscal_start_date = fiscal_year.start_date
+        while eng_fiscal_start_date <= fiscal_year.end_date:
+            nep_fiscal_start_date = english_to_nepali(eng_fiscal_start_date).strftime('%Y-%m-%d')
+            _, nep_month, _ = map(int, nep_fiscal_start_date.split('-'))
+            if nep_month == month:
+                nepali_range.append(eng_fiscal_start_date)
+            eng_fiscal_start_date += datetime.timedelta(days=1)
+
+        if nepali_range:
+            return JsonResponse({
+                'start_date': english_to_nepali(nepali_range[0]).strftime('%Y-%m-%d'),
+                'end_date': english_to_nepali(nepali_range[-1]).strftime('%Y-%m-%d'),
+            })
+        else:
+            return JsonResponse({'error': 'No dates found for selected month.'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+def CalculatePayoutAmount(request):
+    user_id = request.GET.get('employee')
+    start_date_nep = request.GET.get('start_date')
+    end_date_nep = request.GET.get('end_date')
+
+    try:
+        if not user_id or not start_date_nep or not end_date_nep:
+            return JsonResponse({'calculated_amount': ''})
+
+        user = AuthUser.objects.get(pk=user_id)
+        payout = Payout.objects.filter(user=user).first()
+
+        if not payout:
+            return JsonResponse({'calculated_amount': ''})
+
+        # Convert BS to AD
+        start_date = nepali_str_to_english(start_date_nep)
+        end_date = nepali_str_to_english(end_date_nep)
+
+        # Calculate total days in the selected range
+        total_days_in_month = (end_date - start_date).days + 1
+        present_days_in_month = 25  # Replace with real attendance logic if needed
+
+        if total_days_in_month <= 0:
+            return JsonResponse({'calculated_amount': ''})
+
+        # Calculate amount
+        monthly_amount = payout.amount
+        per_day_rate = monthly_amount / total_days_in_month
+        calculated_amount = per_day_rate * present_days_in_month
+
+        return JsonResponse({
+            'calculated_amount': round(calculated_amount, 2)
+        })
+
+    except Exception as e:
+        return JsonResponse({'calculated_amount': '', 'error': str(e)})
+
+
 
 class PayoutIntervalListView(LoginRequiredMixin, ListView):
     model = PayoutInterval

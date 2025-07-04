@@ -21,10 +21,10 @@ class SalaryTypeForm(forms.ModelForm):
 
 class SalaryReleaseForm(forms.ModelForm):
     start_date = forms.CharField(widget=forms.TextInput(attrs={
-        'placeholder': 'YYYY-MM-DD (BS)', 'class': 'nep_date'
+        'placeholder': 'YYYY-MM-DD (BS)', 'class': 'nep_date readonly-input'
     }))
     end_date = forms.CharField(widget=forms.TextInput(attrs={
-        'placeholder': 'YYYY-MM-DD (BS)', 'class': 'nep_date'
+        'placeholder': 'YYYY-MM-DD (BS)', 'class': 'nep_date readonly-input'
     }))
     class Meta:
         model = SalaryRelease
