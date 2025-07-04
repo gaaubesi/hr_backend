@@ -36,7 +36,7 @@ class ProfileForm(forms.ModelForm):
 
     class Meta:
         model = Profile
-        fields = ('dob', 'gender', 'marital_status', 'address', 'mobile_number', 'secondary_number', 'personal_email', 'religion', 'blood_group')
+        fields = ('dob', 'gender', 'marital_status', 'address', 'mobile_number', 'secondary_number', 'personal_email', 'religion', 'blood_group', 'is_verified', 'status')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -53,6 +53,8 @@ class ProfileForm(forms.ModelForm):
             choice for choice in self.fields['religion'].choices if choice[0] != 'A'
         ]
 
+        self.fields['status'].required = True
+       
         self.fields['mobile_number'].required = True
 
         if Setup.get_calendar_type() == 'bs':

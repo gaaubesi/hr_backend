@@ -128,11 +128,19 @@ class LoginUserView(View):
         form = UserLoginForm(request.POST)
 
         if form.is_valid():
-            user = authenticate(username=form.cleaned_data.get('username'),
-                            password=form.cleaned_data.get('password'))
+            user = authenticate(
+                username=form.cleaned_data.get('username'),
+                password=form.cleaned_data.get('password')
+            )
 
             # if user is not None and user.profile.role == 'Super-Admin':
-            if user is not None:
+            if user is not None and user.is_active:
+                profile = getattr(user, 'profile', None)
+                if profile and profile.status == 'not_working':
+                # Block login for not working users
+                    messages.error(request, "Your account is inactive because you are not working.")
+                    return render(request, self.template_name, context={'form': form})
+                
                 next_url = self.request.GET.get('next')
                 login(self.request, user)
                 if next_url:
