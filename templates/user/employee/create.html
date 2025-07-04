@@ -217,8 +217,8 @@
                                                 <input type="file" name="document_file-0" id="id_document_file-0" class="form-control" required>
                                             </div>
                                             <div class="col-md-2 px-2">
-                                                <label for="id_document_number-0">Document Number <span class="asteriskField">*</span></label>
-                                                <input type="text" name="document_number-0" id="id_document_number-0" class="form-control" placeholder="Enter doc number" required> 
+                                                <label for="id_document_number-0">Document Number</label>
+                                                <input type="text" name="document_number-0" id="id_document_number-0" class="form-control" placeholder="Enter doc number"> 
                                             </div>
                                             <div class="col-md-3 px-2">
                                                 <label for="id_issue_date-0">Issue Date</label>
@@ -248,15 +248,6 @@
                             <a href="{% url 'user:employee_list' %}" class="btn btn-warning">Cancel</a>
                         </div>
                     </form>
-
-                    <!-- Districts data for JavaScript -->
-                    <script type="application/json" id="districts-data">
-                        [
-                            {% for district in document_form.fields.issue_body.queryset %}
-                                {"id": "{{ district.id }}", "name": "{{ district.name }}"}{% if not forloop.last %},{% endif %}
-                            {% endfor %}
-                        ]
-                    </script>
 
                     <!-- Display existing documents -->
                     <div class="card mt-4">
@@ -378,7 +369,7 @@
                                                         <small class="text-muted">Current file: {{ document.document_file.name }}</small>
                                                     </div>
                                                     <div class="mb-3">
-                                                        <label for="edit_document_number_{{ document.id }}" class="form-label">Document Number<span class="asteriskField">*</span></label>
+                                                        <label for="edit_document_number_{{ document.id }}" class="form-label">Document Number</label>
                                                         <input type="text" name="document_number" id="edit_document_number_{{ document.id }}" class="form-control" placeholder="Enter document number" value="{{ document.document_number|default:'' }}">
                                                     </div>
                                                     <div class="mb-3">
@@ -682,15 +673,28 @@
                 function toggleEditIssueFields() {
                     // Hide document number, issue date and issuing authority fields by default
                     editDocumentNumberField.closest('.mb-3').hide();
+                    editDocumentNumberField.removeAttribute('required');
                     editIssueDateField.closest('.mb-3').hide();
                     editIssueBodyField.closest('.mb-3').hide();
+
+                    // Remove asterisk if it exists
+                    const asterisk = editDocumentNumberLabel.find('.asteriskField');
+                    if (asterisk.length) {
+                        asterisk.remove();
+                    }
 
                     // Show for specific document types
                     const docType = editDocumentTypeSelect.val();
                     if (docType === 'citizenship_front' || docType === 'citizenship_back' || docType === 'pan_card') {
                         editDocumentNumberField.closest('.mb-3').show();
+                        editDocumentNumberField.attr('required', 'required');
                         editIssueDateField.closest('.mb-3').show();
                         editIssueBodyField.closest('.mb-3').show();
+                        
+                        // Add asterisk if it doesn't exist
+                        if (!editDocumentNumberLabel.find('.asteriskField').length) {
+                            editDocumentNumberLabel.append(' <span class="asteriskField">*</span>');
+                        }
                     }
                 }
 
@@ -746,6 +750,7 @@
             // Hide document number, issue date and issuing authority fields by default
             if (documentNumberField) {
                 documentNumberField.closest('.col-md-2').style.display = 'none';
+                documentNumberField.removeAttribute('required');
             }
             if (issueDateField) {
                 issueDateField.closest('.col-md-3').style.display = 'none';
@@ -755,6 +760,11 @@
             }
             if (documentNumberLabel) {
                 documentNumberLabel.closest('.col-md-2').style.display = 'none';
+                // Remove asterisk if it exists
+                const asterisk = documentNumberLabel.querySelector('.asteriskField');
+                if (asterisk) {
+                    asterisk.remove();
+                }
             }
             if (issueDateLabel) {
                 issueDateLabel.closest('.col-md-3').style.display = 'none';
@@ -767,6 +777,7 @@
             if (documentTypeSelect.value === 'citizenship_front' || documentTypeSelect.value === 'citizenship_back' || documentTypeSelect.value === 'pan_card') {
                 if (documentNumberField) {
                     documentNumberField.closest('.col-md-2').style.display = 'block';
+                    documentNumberField.setAttribute('required', 'required');
                 }
                 if (issueDateField) {
                     issueDateField.closest('.col-md-3').style.display = 'block';
@@ -776,6 +787,10 @@
                 }
                 if (documentNumberLabel) {
                     documentNumberLabel.closest('.col-md-2').style.display = 'block';
+                    // Add asterisk if it doesn't exist
+                    if (!documentNumberLabel.querySelector('.asteriskField')) {
+                        documentNumberLabel.innerHTML += ' <span class="asteriskField">*</span>';
+                    }
                 }
                 if (issueDateLabel) {
                     issueDateLabel.closest('.col-md-3').style.display = 'block';
@@ -822,7 +837,7 @@
                 newForm.querySelectorAll('select').forEach(select => {
                     select.selectedIndex = 0;
                     updateDocumentTypeOptions(select);
-                });s
+                });
 
                 // Remove any select2 containers that may have been cloned
                 newForm.querySelectorAll('.select2-container').forEach(el => el.remove());
@@ -833,14 +848,11 @@
                     if ($(issueBodySelect).hasClass('select2-hidden-accessible')) {
                         $(issueBodySelect).select2('destroy');
                     }
-                    issueBodySelect.innerHTML = '<option value="">Select Issuing Authority</option>';
-                    const districtsData = JSON.parse(document.getElementById('districts-data').textContent);
-                    districtsData.forEach(district => {
-                        const option = document.createElement('option');
-                        option.value = district.id;
-                        option.textContent = district.name;
-                        issueBodySelect.appendChild(option);
-                    });
+                    // Get the original issue_body select to copy its options
+                    const originalIssueBodySelect = document.querySelector('select[name="issue_body-0"]');
+                    if (originalIssueBodySelect) {
+                        issueBodySelect.innerHTML = originalIssueBodySelect.innerHTML;
+                    }
                 }
 
                 // Add remove button if not the first form
@@ -875,6 +887,12 @@
                     });
                     // Initialize on creation
                     toggleIssueFields(newDocumentTypeSelect);
+                }
+
+                // Initialize Nepali date picker for the new issue date field
+                const newIssueDateField = newForm.querySelector('input[name^="issue_date-"]');
+                if (newIssueDateField) {
+                    newIssueDateField.nepaliDatePicker();
                 }
             });
         }
